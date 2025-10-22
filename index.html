@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>City Map Gallery</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    :root { --accent:#1f6feb; --text:#0f172a; --bg:#f8fafc; }
+    *{ box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial; }
+    a { color: var(--accent); text-decoration: none; }
+    .app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+    header { display:flex; gap:.75rem; align-items:center; padding:.75rem 1rem; border-bottom:1px solid #e2e8f0; background:white; position: sticky; top:0; z-index:10 }
+    header h1 { font-size:1.1rem; margin:0 }
+    header .repo { margin-left:auto }
+
+    /* Views */
+    #view-landing, #view-city { height: 100%; }
+    .landing { display:grid; grid-template-columns: 380px 1fr; height: calc(100vh - 56px); }
+    .side { padding: 1rem; overflow:auto; border-right:1px solid #e2e8f0; background:white }
+    .search { display:flex; gap:.5rem; margin-bottom:.75rem }
+    .search input{ width:100%; padding:.55rem .7rem; border:1px solid #cbd5e1; border-radius:.55rem }
+    .cities { display:grid; gap:.5rem }
+    .city-card { display:flex; justify-content:space-between; align-items:center; padding:.6rem .7rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:.6rem; cursor:pointer }
+    .city-card:hover { background:#eef2ff }
+    .muted { color:#64748b; font-size:.85rem }
+
+    #mapLanding, #map { width:100%; height:100% }
+
+    .toolbar { display:flex; gap:.5rem; align-items:center; padding:.5rem 1rem; border-bottom:1px solid #e2e8f0; background:white }
+    .btn { padding:.45rem .7rem; border:1px solid #cbd5e1; border-radius:.55rem; background:white; cursor:pointer }
+    .btn:hover{ background:#f1f5f9 }
+
+    .legend { background: white; padding: .5rem .6rem; border-radius: .5rem; box-shadow: 0 2px 6px rgba(0,0,0,.08); line-height: 1.1; }
+    .legend .scale { display:flex; gap:2px; margin: .3rem 0 .2rem; }
+    .legend .swatch { width: 18px; height: 12px; border-radius: 2px; }
+    .leaflet-control-layers-expanded { max-height: 260px; overflow:auto; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1 id="title">City Map Gallery</h1>
+    <div id="subtitle" class="muted"></div>
+    <a class="repo" id="repoLink" href="#" target="_blank" rel="noopener">View repo</a>
+  </header>
+
+  <!-- LANDING VIEW -->
+  <div id="view-landing" class="landing">
+    <div class="side">
+      <div class="search">
+        <input id="search" type="search" placeholder="Search cities…" />
+        <button class="btn" id="clear">Clear</button>
+      </div>
+      <div id="cityList" class="cities"></div>
+      <div class="muted" style="margin-top:.75rem">Click a city name or a map pin to open its layers.</div>
+    </div>
+    <div id="mapLanding"></div>
+  </div>
+
+  <!-- CITY VIEW -->
+  <div id="view-city" style="display:none">
+    <div class="toolbar">
+      <button class="btn" id="backBtn">← Back to all cities</button>
+      <div id="cityBreadcrumb" class="muted"></div>
+    </div>
+    <div id="map"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+  // =====================
+  // CONFIGURATION
+  // =====================
+  // Add ~20 cities here. Put each city's GeoJSON files under data/<slug>/ ...
+  // Each layer must specify valueProp for coloring.
+  const CITIES = [
+    {
+      name: 'Rome', slug: 'rome', center: [41.9028, 12.4964], zoom: 11,
+      layers: [
+        { name: 'Grid – A', url: 'data/rome/grid_a.geojson', valueProp: 'value' },
+        { name: 'Grid – B', url: 'data/rome/grid_b.geojson', valueProp: 'value' }
+      ]
+    },
+    {
+      name: 'Milan', slug: 'milan', center: [45.4642, 9.19], zoom: 12,
+      layers: [ { name: 'Grid – A', url: 'data/milan/grid_a.geojson', valueProp: 'value' } ]
+    },
+    // ...add the rest of your ~20 cities here
+  ];
+
+  const REPO_URL = '#'; // set your GitHub repo URL here
+  document.getElementById('repoLink').href = REPO_URL;
+
+  // =====================
+  // LANDING: list + pins
+  // =====================
+  const landingMap = L.map('mapLanding', { zoomControl: true }).setView([42.5, 12.5], 5);
+  const baseLanding = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap & CARTO', maxZoom: 19 }).addTo(landingMap);
+
+  const markers = [];
+  CITIES.forEach(c => {
+    const m = L.marker(c.center).addTo(landingMap).bindPopup(`<b>${c.name}</b><br/><a href="#/city/${c.slug}">Open map</a>`);
+    m.on('click', () => goCity(c.slug));
+    markers.push(m);
+  });
+  try {
+    const group = L.featureGroup(markers);
+    landingMap.fitBounds(group.getBounds().pad(0.2));
+  } catch(e) {}
+
+  const listEl = document.getElementById('cityList');
+  function renderList(filter=''){
+    const q = filter.trim().toLowerCase();
+    listEl.innerHTML = '';
+    CITIES.filter(c => !q || c.name.toLowerCase().includes(q)).forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'city-card';
+      card.innerHTML = `<div><div><strong>${c.name}</strong></div><div class="muted">${c.layers.length} layer${c.layers.length>1?'s':''}</div></div><div>›</div>`;
+      card.onclick = () => goCity(c.slug);
+      listEl.appendChild(card);
+    });
+  }
+  renderList();
+
+  document.getElementById('search').addEventListener('input', (e)=> renderList(e.target.value));
+  document.getElementById('clear').addEventListener('click', ()=>{ document.getElementById('search').value=''; renderList(''); });
+
+  // =====================
+  // CITY VIEW (reuses Leaflet)
+  // =====================
+  let cityMap, layerControl, legend;
+
+  function makeColorScale(values, n = 7) {
+    const sorted = values.filter(v => Number.isFinite(v)).sort((a,b) => a-b);
+    if (!sorted.length) return v => '#cccccc';
+    const qs = Array.from({length:n+1}, (_,i)=> sorted[Math.min(sorted.length-1, Math.floor(i*(sorted.length-1)/n))]);
+    const palette = ['#f1eef6','#d4b9da','#c994c7','#df65b0','#e7298a','#ce1256','#91003f'];
+    return function(v){ if (!Number.isFinite(v)) return '#cccccc'; for (let i=0;i<n;i++) if (v <= qs[i+1]) return palette[i]; return palette[n-1]; };
+  }
+  function fmt(v){ return Number.isFinite(v) ? new Intl.NumberFormat().format(v) : 'n/a'; }
+
+  const Legend = L.Control.extend({
+    options: { position: 'bottomright' },
+    onAdd: function(){ const d = L.DomUtil.create('div','legend'); d.innerHTML = '<b>Legend</b><div class="scale" id="legend-scale"></div><div class="muted" id="legend-note"></div>'; this._div=d; return d; },
+    update: function(title, breaks, colors, note){ const scale=this._div.querySelector('#legend-scale'); scale.innerHTML=''; for(let i=0;i<colors.length;i++){ const sw=document.createElement('div'); sw.className='swatch'; sw.style.background=colors[i]; sw.title=`${fmt(breaks[i])}–${fmt(breaks[i+1])}`; scale.appendChild(sw);} this._div.querySelector('#legend-note').textContent = note||''; }
+  });
+
+  async function loadCity(slug){
+    const city = CITIES.find(c => c.slug === slug);
+    if (!city) return goHome();
+
+    // swap views
+    document.getElementById('view-landing').style.display='none';
+    document.getElementById('view-city').style.display='block';
+    document.getElementById('subtitle').textContent = city.name;
+    document.getElementById('cityBreadcrumb').textContent = city.name;
+
+    if (!cityMap){
+      cityMap = L.map('map', { zoomControl:true });
+      const base = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap & CARTO', maxZoom:19 }).addTo(cityMap);
+      layerControl = L.control.layers({ 'Light': base }, {}, { collapsed:false }).addTo(cityMap);
+      legend = new Legend(); legend.addTo(cityMap);
+    }
+
+    cityMap.setView(city.center, city.zoom || 12);
+
+    // remove existing overlays
+    Object.values(layerControl._layers).forEach(obj => { if (obj.overlay && cityMap.hasLayer(obj.layer)) cityMap.removeLayer(obj.layer); });
+    layerControl._layers = {};
+    layerControl._layerControlInputs = [];
+    layerControl._layersMaxHeight = null; // force rebuild
+    cityMap.eachLayer(l => { /* keep base */ });
+
+    // add layers
+    const overlayGroups = {};
+    for (const def of city.layers){
+      try {
+        const res = await fetch(def.url);
+        if (!res.ok) throw new Error('failed '+def.url);
+        const gj = await res.json();
+        const vals=[]; (gj.features||[]).forEach(f=>{ const v=Number(f.properties?.[def.valueProp]); if(Number.isFinite(v)) vals.push(v); });
+        const color = makeColorScale(vals, 7);
+        const palette = ['#f1eef6','#d4b9da','#c994c7','#df65b0','#e7298a','#ce1256','#91003f'];
+        const breaks = [0,1,2,3,4,5,6,7].map(i=> vals.length ? vals[Math.min(vals.length-1, Math.floor(i*(vals.length-1)/7))] : i);
+
+        const layer = L.geoJSON(gj, {
+          style: f => ({ color:'#333', weight:0.6, fillOpacity:0.8, fillColor: color(Number(f.properties?.[def.valueProp])) }),
+          onEachFeature:(feature, lyr)=>{
+            const p=feature.properties||{}; const v=Number(p[def.valueProp]);
+            const keys=Object.keys(p).filter(k=>!['uid','id'].includes(k));
+            const rows=keys.map(k=>`<tr><td><strong>${k}</strong></td><td>${p[k]}</td></tr>`).join('');
+            lyr.bindPopup(`<div><b>${def.name}</b><br/>${def.valueProp}: <b>${fmt(v)}</b><table>${rows}</table></div>`);
+          }
+        }).addTo(cityMap);
+
+        overlayGroups[def.name]=layer;
+        layerControl.addOverlay(layer, def.name);
+        layer.on('add', ()=> legend.update(def.name, breaks, palette, `${def.valueProp}`));
+      } catch(e){ console.error(e); }
+    }
+
+    // fit to first overlay
+    const names = Object.keys(overlayGroups);
+    if (names.length){ try{ cityMap.fitBounds(overlayGroups[names[0]].getBounds(), { padding:[20,20] }); }catch(e){} }
+  }
+
+  function goCity(slug){ location.hash = `#/city/${slug}`; }
+  function goHome(){ location.hash = '#/'; }
+
+  document.getElementById('backBtn').addEventListener('click', goHome);
+
+  // simple hash router
+  function router(){
+    const hash = location.hash || '#/';
+    if (hash.startsWith('#/city/')){
+      const slug = hash.split('/')[2];
+      document.getElementById('title').textContent = 'City • ' + slug;
+      loadCity(slug);
+    } else {
+      document.getElementById('title').textContent = 'City Map Gallery';
+      document.getElementById('subtitle').textContent = '';
+      document.getElementById('view-landing').style.display='grid';
+      document.getElementById('view-city').style.display='none';
+    }
+  }
+  window.addEventListener('hashchange', router);
+  router();
+</script>
+</body>
+</html>
