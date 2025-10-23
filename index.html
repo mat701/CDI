@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>City Map Gallery</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     :root { --accent:#1f6feb; --text:#0f172a; --bg:#f8fafc; }
     *{ box-sizing: border-box; }
@@ -74,21 +75,41 @@
   // =====================
   // CONFIGURATION
   // =====================
-  // Add ~20 cities here. Put each city's GeoJSON files under data/<slug>/ ...
-  // Each layer must specify valueProp for coloring.
+  // Each city can define grid layers AND optional CSV joins that provide a CDI value per hexagon.
+  // Join config: join: { csv: 'data/<slug>/cdi.csv', csvId: 'hexagon_id', geoId: 'hexagon_id', valueColumn: 'CDI' }
   const CITIES = [
     {
-      name: 'Rome', slug: 'rome', center: [41.9028, 12.4964], zoom: 11,
+      name: 'Rome', slug: 'rome', center: [41.9028, 12.4964], zoom: 9,
       layers: [
-        { name: 'Grid – A', url: 'data/rome/grid_a.geojson', valueProp: 'value' },
-        { name: 'Grid – B', url: 'data/rome/grid_b.geojson', valueProp: 'value' }
+        {
+          name: 'CDI (hex grid)', url: 'data/rome/hexes.geojson',
+          // If your GeoJSON features have a property like properties.hexagon_id that matches the CSV's hexagon_id:
+          join: { csv: 'data/rome/cdi.csv', csvId: 'hexagon_id', geoId: 'id', valueColumn: 'CDI' }
+        }
       ]
     },
     {
-      name: 'Milan', slug: 'milan', center: [45.4642, 9.19], zoom: 12,
-      layers: [ { name: 'Grid – A', url: 'data/milan/grid_a.geojson', valueProp: 'value' } ]
+      name: 'Milan', slug: 'milan', center: [45.47137, 9.18905], zoom: 9,
+      layers: [
+        {
+          name: 'CDI (hex grid)', url: 'data/milan/hexes.geojson',
+          // If your GeoJSON features have a property like properties.hexagon_id that matches the CSV's hexagon_id:
+          join: { csv: 'data/milan/cdi.csv', csvId: 'hexagon_id', geoId: 'id', valueColumn: 'CDI' }
+        }
+      ]
     },
-    // ...add the rest of your ~20 cities here
+    {
+      name: 'Paris', slug: 'paris', center: [48.86368, 2.34925], zoom: 9,
+      layers: [
+        {
+          name: 'CDI (hex grid)', url: 'data/paris/hexes.geojson',
+          // If your GeoJSON features have a property like properties.hexagon_id that matches the CSV's hexagon_id:
+          join: { csv: 'data/paris/cdi.csv', csvId: 'hexagon_id', geoId: 'id', valueColumn: 'CDI' }
+        }
+      ]
+    },
+
+    // Add more cities here…
   ];
 
   const REPO_URL = '#'; // set your GitHub repo URL here
@@ -118,7 +139,7 @@
     CITIES.filter(c => !q || c.name.toLowerCase().includes(q)).forEach(c => {
       const card = document.createElement('div');
       card.className = 'city-card';
-      card.innerHTML = `<div><div><strong>${c.name}</strong></div><div class="muted">${c.layers.length} layer${c.layers.length>1?'s':''}</div></div><div>›</div>`;
+      card.innerHTML = `<div><div><strong>${c.name}</strong></div><div class=\"muted\">${c.layers.length} layer${c.layers.length>1?'s':''}</div></div><div>›</div>`;
       card.onclick = () => goCity(c.slug);
       listEl.appendChild(card);
     });
@@ -129,32 +150,84 @@
   document.getElementById('clear').addEventListener('click', ()=>{ document.getElementById('search').value=''; renderList(''); });
 
   // =====================
-  // CITY VIEW (reuses Leaflet)
+  // COLOR SCALES
   // =====================
-  let cityMap, layerControl, legend;
+  function fmt(v){ return Number.isFinite(v) ? new Intl.NumberFormat().format(v) : 'n/a'; }
 
-  function makeColorScale(values, n = 7) {
+  // Diverging blue-white-red for CDI in [-1,1]
+  function cdiColor(v){
+    if (!Number.isFinite(v)) return '#cccccc';
+    const t = Math.max(-1, Math.min(1, v)); // clamp
+    // Colors: blue #2166ac -> white #ffffff -> red #b2182b
+    const blue = [0x21,0x66,0xac], white=[0xff,0xff,0xff], red=[0xb2,0x18,0x2b];
+    function lerp(a,b,t){ return a + (b-a)*t; }
+    let rgb;
+    if (t < 0){ // blue -> white
+      const u = (t + 1) / 1; // [-1,0] -> [0,1]
+      rgb = [lerp(blue[0], white[0], u), lerp(blue[1], white[1], u), lerp(blue[2], white[2], u)];
+    } else { // white -> red
+      const u = t / 1; // [0,1] -> [0,1]
+      rgb = [lerp(white[0], red[0], u), lerp(white[1], red[1], u), lerp(white[2], red[2], u)];
+    }
+    return '#' + rgb.map(v=> Math.round(v).toString(16).padStart(2,'0')).join('');
+  }
+
+  function makeQuantileScale(values, n = 7) {
     const sorted = values.filter(v => Number.isFinite(v)).sort((a,b) => a-b);
     if (!sorted.length) return v => '#cccccc';
     const qs = Array.from({length:n+1}, (_,i)=> sorted[Math.min(sorted.length-1, Math.floor(i*(sorted.length-1)/n))]);
     const palette = ['#f1eef6','#d4b9da','#c994c7','#df65b0','#e7298a','#ce1256','#91003f'];
     return function(v){ if (!Number.isFinite(v)) return '#cccccc'; for (let i=0;i<n;i++) if (v <= qs[i+1]) return palette[i]; return palette[n-1]; };
   }
-  function fmt(v){ return Number.isFinite(v) ? new Intl.NumberFormat().format(v) : 'n/a'; }
 
+  // =====================
+  // LEGEND CONTROL
+  // =====================
   const Legend = L.Control.extend({
     options: { position: 'bottomright' },
     onAdd: function(){ const d = L.DomUtil.create('div','legend'); d.innerHTML = '<b>Legend</b><div class="scale" id="legend-scale"></div><div class="muted" id="legend-note"></div>'; this._div=d; return d; },
-    update: function(title, breaks, colors, note){ const scale=this._div.querySelector('#legend-scale'); scale.innerHTML=''; for(let i=0;i<colors.length;i++){ const sw=document.createElement('div'); sw.className='swatch'; sw.style.background=colors[i]; sw.title=`${fmt(breaks[i])}–${fmt(breaks[i+1])}`; scale.appendChild(sw);} this._div.querySelector('#legend-note').textContent = note||''; }
+    updateSwatches: function(colors, labels){
+      const scale=this._div.querySelector('#legend-scale');
+      scale.innerHTML='';
+      for(let i=0;i<colors.length;i++){
+        const sw=document.createElement('div'); sw.className='swatch'; sw.style.background=colors[i]; sw.title=labels && labels[i] ? labels[i] : '';
+        scale.appendChild(sw);
+      }
+      this._div.querySelector('#legend-note').textContent = '';
+    },
+    note: function(text){ this._div.querySelector('#legend-note').textContent = text || ''; }
   });
+
+  // =====================
+  // CSV LOADER / JOIN
+  // =====================
+  async function loadCsvMap(url, keyCol, valueCol){
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to load CSV '+url);
+    const text = await res.text();
+    const parsed = Papa.parse(text, { header:true, dynamicTyping:true, skipEmptyLines:true });
+    const map = new Map();
+    parsed.data.forEach(r => {
+      const k = r[keyCol];
+      const v = r[valueCol];
+      if (k !== undefined) map.set(String(k), v);
+    });
+    return map;
+  }
+
+  // =====================
+  // CITY VIEW (reuses Leaflet)
+  // =====================
+  let cityMap, layerControl, legend;
 
   async function loadCity(slug){
     const city = CITIES.find(c => c.slug === slug);
     if (!city) return goHome();
 
     // swap views
-    document.getElementById('view-landing').style.display='none';
+    document.getElementById('view-landing').style.display='grid'; // keep layout while we prep
     document.getElementById('view-city').style.display='block';
+    document.getElementById('view-landing').style.display='none';
     document.getElementById('subtitle').textContent = city.name;
     document.getElementById('cityBreadcrumb').textContent = city.name;
 
@@ -167,38 +240,73 @@
 
     cityMap.setView(city.center, city.zoom || 12);
 
-    // remove existing overlays
-    Object.values(layerControl._layers).forEach(obj => { if (obj.overlay && cityMap.hasLayer(obj.layer)) cityMap.removeLayer(obj.layer); });
-    layerControl._layers = {};
-    layerControl._layerControlInputs = [];
-    layerControl._layersMaxHeight = null; // force rebuild
+    // remove existing overlays from control
+    const toRemove = [];
     cityMap.eachLayer(l => { /* keep base */ });
+    if (layerControl && layerControl._layers){
+      Object.values(layerControl._layers).forEach(obj => { if (obj.overlay) toRemove.push(obj.layer); });
+      toRemove.forEach(l => { try{ cityMap.removeLayer(l); }catch(e){} });
+    }
 
-    // add layers
     const overlayGroups = {};
+
     for (const def of city.layers){
       try {
         const res = await fetch(def.url);
         if (!res.ok) throw new Error('failed '+def.url);
         const gj = await res.json();
-        const vals=[]; (gj.features||[]).forEach(f=>{ const v=Number(f.properties?.[def.valueProp]); if(Number.isFinite(v)) vals.push(v); });
-        const color = makeColorScale(vals, 7);
-        const palette = ['#f1eef6','#d4b9da','#c994c7','#df65b0','#e7298a','#ce1256','#91003f'];
-        const breaks = [0,1,2,3,4,5,6,7].map(i=> vals.length ? vals[Math.min(vals.length-1, Math.floor(i*(vals.length-1)/7))] : i);
+
+        // Optional CSV join for CDI
+        let joinMap = null, csvId, geoId, valueCol;
+        if (def.join){
+          csvId = def.join.csvId || 'hexagon_id';
+          geoId = def.join.geoId || 'id';
+          valueCol = def.join.valueColumn || 'CDI';
+          joinMap = await loadCsvMap(def.join.csv, csvId, valueCol);
+          // annotate features with CDI
+          (gj.features||[]).forEach(f => {
+            const k = f.properties?.[geoId];
+            if (k !== undefined){
+              const v = joinMap.get(String(k));
+              if (v !== undefined) f.properties[valueCol] = v;
+            }
+          });
+        }
+
+        // Determine color function
+        let styleColor, legendColors, legendLabels, legendNote;
+        if (def.join){
+          styleColor = f => cdiColor(Number(f.properties?.[valueCol]));
+          // Build a simple diverging legend with 9 swatches from -1 .. 1
+          const steps = 9;
+          legendColors = Array.from({length:steps}, (_,i)=> cdiColor((i/(steps-1))*2-1));
+          legendLabels = ['-1 … 1 scale'];
+          legendNote = `${valueCol}: -1 (blue) → 0 (white) → 1 (red)`;
+        } else {
+          // fallback quantiles by def.valueProp
+          const vals=[]; (gj.features||[]).forEach(f=>{ const v=Number(f.properties?.[def.valueProp]); if(Number.isFinite(v)) vals.push(v); });
+          const color = makeQuantileScale(vals, 7);
+          styleColor = f => color(Number(f.properties?.[def.valueProp]));
+          legendColors = ['#f1eef6','#d4b9da','#c994c7','#df65b0','#e7298a','#ce1256','#91003f'];
+          legendNote = def.valueProp || '';
+        }
 
         const layer = L.geoJSON(gj, {
-          style: f => ({ color:'#333', weight:0.6, fillOpacity:0.8, fillColor: color(Number(f.properties?.[def.valueProp])) }),
+          style: f => ({ color:'#333', weight:0.6, fillOpacity:0.85, fillColor: styleColor(f) }),
           onEachFeature:(feature, lyr)=>{
-            const p=feature.properties||{}; const v=Number(p[def.valueProp]);
+            const p=feature.properties||{};
+            const cdi = def.join ? Number(p[valueCol]) : undefined;
+            const showVal = def.join ? `${valueCol}: <b>${Number.isFinite(cdi)? cdi.toFixed(3):'n/a'}</b>` : `${def.valueProp}: <b>${fmt(Number(p[def.valueProp]))}</b>`;
             const keys=Object.keys(p).filter(k=>!['uid','id'].includes(k));
             const rows=keys.map(k=>`<tr><td><strong>${k}</strong></td><td>${p[k]}</td></tr>`).join('');
-            lyr.bindPopup(`<div><b>${def.name}</b><br/>${def.valueProp}: <b>${fmt(v)}</b><table>${rows}</table></div>`);
+            lyr.bindPopup(`<div><b>${def.name}</b><br/>${showVal}<table>${rows}</table></div>`);
           }
         }).addTo(cityMap);
 
         overlayGroups[def.name]=layer;
         layerControl.addOverlay(layer, def.name);
-        layer.on('add', ()=> legend.update(def.name, breaks, palette, `${def.valueProp}`));
+        // Update legend when toggled
+        layer.on('add', ()=> { legend.updateSwatches(legendColors); legend.note(legendNote); });
       } catch(e){ console.error(e); }
     }
 
