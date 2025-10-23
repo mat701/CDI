@@ -1,0 +1,29 @@
+[
+  {
+    "slug": "milan",
+    "name": "Milan",
+    "center": [
+      45.468379,
+      9.172547
+    ],
+    "zoom": 10
+  },
+  {
+    "slug": "paris",
+    "name": "Paris",
+    "center": [
+      48.856397,
+      2.343267
+    ],
+    "zoom": 10
+  },
+  {
+    "slug": "rome",
+    "name": "Rome",
+    "center": [
+      41.885773,
+      12.460808
+    ],
+    "zoom": 10
+  }
+]

@@ -1,0 +1,61 @@
+:root { --accent:#1f6feb; --text:#0f172a; --bg:#f8fafc; }
+*{ box-sizing: border-box; }
+html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial; }
+a { color: var(--accent); text-decoration: none; }
+.app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+header { display:flex; gap:.75rem; align-items:center; padding:.75rem 1rem; border-bottom:1px solid #e2e8f0; background:white; position: sticky; top:0; z-index:10 }
+header h1 { font-size:1.1rem; margin:0 }
+header .repo { margin-left:auto }
+
+/* Views */
+#view-landing, #view-city { height: 100%; }
+.landing { display:grid; grid-template-columns: 380px 1fr; height: calc(100vh - 56px); }
+.side { padding: 1rem; overflow:auto; border-right:1px solid #e2e8f0; background:white }
+.search { display:flex; gap:.5rem; margin-bottom:.75rem }
+.search input{ width:100%; padding:.55rem .7rem; border:1px solid #cbd5e1; border-radius:.55rem }
+.cities { display:grid; gap:.5rem }
+.city-card { display:flex; justify-content:space-between; align-items:center; padding:.6rem .7rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:.6rem; cursor:pointer }
+.city-card:hover { background:#eef2ff }
+.muted { color:#64748b; font-size:.85rem }
+
+#mapLanding, #map { width:100%; height:100% }
+
+.toolbar { display:flex; gap:.5rem; align-items:center; padding:.5rem 1rem; border-bottom:1px solid #e2e8f0; background:white }
+.btn { padding:.45rem .7rem; border:1px solid #cbd5e1; border-radius:.55rem; background:white; cursor:pointer }
+.btn:hover{ background:#f1f5f9 }
+
+/*.legend { background: white; padding: .5rem .6rem; border-radius: .5rem; box-shadow: 0 2px 6px rgba(0,0,0,.08); line-height: 1.1; }
+.legend .scale { display:flex; gap:2px; margin: .3rem 0 .2rem; }
+.legend .swatch { width: 18px; height: 12px; border-radius: 2px; }
+.leaflet-control-layers-expanded { max-height: 260px; overflow:auto; }*/
+/* Continuous vertical legend */
+.legend {
+  background: white;
+  padding: .5rem .6rem;
+  border-radius: .5rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+  line-height: 1.1;
+  font-size: 0.85rem;
+}
+.legend-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: .4rem;
+  height: 140px;
+  margin-top: .3rem;
+}
+.legend-gradient {
+  width: 18px;
+  flex-shrink: 0;
+  background: linear-gradient(to top, #b2182b 0%, #ffffff 50%, #2166ac 100%);
+  border-radius: 3px;
+  border: 1px solid #ccc;
+}
+.legend-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #475569;
+}
