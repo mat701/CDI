@@ -3,8 +3,8 @@
     "slug": "barcelona",
     "name": "Barcelona",
     "center": [
-      0,
-      0
+      41.39983,
+      2.150895
     ],
     "zoom": 10
   },
@@ -12,8 +12,8 @@
     "slug": "berlin",
     "name": "Berlin",
     "center": [
-      0,
-      0
+      52.501494,
+      13.401636
     ],
     "zoom": 10
   },
@@ -21,8 +21,8 @@
     "slug": "bigparis",
     "name": "Bigparis",
     "center": [
-      0,
-      0
+      48.842644,
+      2.314062
     ],
     "zoom": 10
   },
@@ -30,8 +30,8 @@
     "slug": "bordeaux",
     "name": "Bordeaux",
     "center": [
-      0,
-      0
+      44.857626,
+      -0.573386
     ],
     "zoom": 10
   },
@@ -39,8 +39,8 @@
     "slug": "boston",
     "name": "Boston",
     "center": [
-      0,
-      0
+      42.316555,
+      -71.090078
     ],
     "zoom": 10
   },
@@ -48,8 +48,8 @@
     "slug": "chicago",
     "name": "Chicago",
     "center": [
-      0,
-      0
+      41.837634,
+      -87.686584
     ],
     "zoom": 10
   },
@@ -57,8 +57,8 @@
     "slug": "equalrome",
     "name": "Equalrome",
     "center": [
-      0,
-      0
+      41.885773,
+      12.460808
     ],
     "zoom": 10
   },
@@ -66,8 +66,8 @@
     "slug": "florence",
     "name": "Florence",
     "center": [
-      0,
-      0
+      43.779989,
+      11.245576
     ],
     "zoom": 10
   },
@@ -75,8 +75,8 @@
     "slug": "futurerome",
     "name": "Futurerome",
     "center": [
-      0,
-      0
+      41.885773,
+      12.460808
     ],
     "zoom": 10
   },
@@ -84,8 +84,8 @@
     "slug": "karlsruhe",
     "name": "Karlsruhe",
     "center": [
-      0,
-      0
+      49.011652,
+      8.412455
     ],
     "zoom": 10
   },
@@ -93,8 +93,8 @@
     "slug": "milan",
     "name": "Milan",
     "center": [
-      0,
-      0
+      45.468379,
+      9.172547
     ],
     "zoom": 10
   },
@@ -102,8 +102,8 @@
     "slug": "munich",
     "name": "Munich",
     "center": [
-      0,
-      0
+      48.153223,
+      11.547201
     ],
     "zoom": 10
   },
@@ -111,8 +111,8 @@
     "slug": "málaga",
     "name": "Málaga",
     "center": [
-      0,
-      0
+      36.767551,
+      -4.42445
     ],
     "zoom": 10
   },
@@ -120,8 +120,8 @@
     "slug": "nantes",
     "name": "Nantes",
     "center": [
-      0,
-      0
+      47.232221,
+      -1.547924
     ],
     "zoom": 10
   },
@@ -129,8 +129,8 @@
     "slug": "new_york",
     "name": "New_york",
     "center": [
-      0,
-      0
+      40.663261,
+      -73.938666
     ],
     "zoom": 10
   },
@@ -138,8 +138,8 @@
     "slug": "paris",
     "name": "Paris",
     "center": [
-      0,
-      0
+      48.856397,
+      2.343267
     ],
     "zoom": 10
   },
@@ -147,8 +147,8 @@
     "slug": "porto",
     "name": "Porto",
     "center": [
-      0,
-      0
+      41.161958,
+      -8.620628
     ],
     "zoom": 10
   },
@@ -156,8 +156,8 @@
     "slug": "rome",
     "name": "Rome",
     "center": [
-      0,
-      0
+      41.885773,
+      12.460808
     ],
     "zoom": 10
   },
@@ -165,8 +165,8 @@
     "slug": "seattle",
     "name": "Seattle",
     "center": [
-      0,
-      0
+      47.620909,
+      -122.333082
     ],
     "zoom": 10
   },
@@ -174,8 +174,8 @@
     "slug": "stockholm",
     "name": "Stockholm",
     "center": [
-      0,
-      0
+      59.321991,
+      17.996981
     ],
     "zoom": 10
   },
@@ -183,8 +183,8 @@
     "slug": "valencia",
     "name": "Valencia",
     "center": [
-      0,
-      0
+      39.419584,
+      -0.359989
     ],
     "zoom": 10
   },
@@ -192,8 +192,8 @@
     "slug": "vienna",
     "name": "Vienna",
     "center": [
-      0,
-      0
+      48.208505,
+      16.378076
     ],
     "zoom": 10
   },
@@ -201,8 +201,8 @@
     "slug": "zurich",
     "name": "Zurich",
     "center": [
-      0,
-      0
+      47.381535,
+      8.531315
     ],
     "zoom": 10
   }
