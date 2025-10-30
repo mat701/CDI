@@ -124,22 +124,43 @@
   // =====================
   function fmt(v){ return Number.isFinite(v) ? new Intl.NumberFormat().format(v) : 'n/a'; }
 
-  // Diverging blue-white-red for CDI in [-1,1]
-  function cdiColor(v){
+  function seismicColor(v) {
     if (!Number.isFinite(v)) return '#cccccc';
-    const t = Math.max(-1, Math.min(1, v)); // clamp
-    // Colors: blue #2166ac -> white #ffffff -> red #b2182b
-    const blue = [0x00,0x00,0x4C], white=[0xff,0xff,0xff], red=[0x80,0x00,0x00];
-    function lerp(a,b,t){ return a + (b-a)*t; }
-    let rgb;
-    if (t < 0){ // blue -> white
-      const u = (t + 1) / 1; // [-1,0] -> [0,1]
-      rgb = [lerp(blue[0], white[0], u), lerp(blue[1], white[1], u), lerp(blue[2], white[2], u)];
-    } else { // white -> red
-      const u = t / 1; // [0,1] -> [0,1]
-      rgb = [lerp(white[0], red[0], u), lerp(white[1], red[1], u), lerp(white[2], red[2], u)];
+    const t = Math.max(-1, Math.min(1, v)); // clamp to [-1,1]
+
+    // Define color anchors (same as seismic extremes)
+    const blue = [0x00, 0x00, 0x4C];
+    const white = [0xFF, 0xFF, 0xFF];
+    const red = [0x80, 0x00, 0x00];
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    // Nonlinear easing function — try exponent 0.5 (sqrt) or others
+    function ease(u, power = 0.5) {
+      return Math.sign(u) * Math.pow(Math.abs(u), power);
     }
-    return '#' + rgb.map(v=> Math.round(v).toString(16).padStart(2,'0')).join('');
+
+    // apply easing to exaggerate extremes
+    const e = ease(t, 0.5); // 0.5 makes colors start sooner, 1 = linear
+
+    let rgb;
+    if (e < 0) { // blue → white
+      const u = e + 1; // map [-1,0] → [0,1]
+      rgb = [
+        lerp(blue[0], white[0], u),
+        lerp(blue[1], white[1], u),
+        lerp(blue[2], white[2], u)
+      ];
+    } else { // white → red
+      const u = e;
+      rgb = [
+        lerp(white[0], red[0], u),
+        lerp(white[1], red[1], u),
+        lerp(white[2], red[2], u)
+      ];
+    }
+
+    return '#' + rgb.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
   }
 
   function makeQuantileScale(values, n = 7) {
