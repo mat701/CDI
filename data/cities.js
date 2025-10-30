@@ -2,22 +2,21 @@
 const CITIES_NAMES = [
   "Barcelona",
   "Berlin",
-  "Bigparis",
   "Bordeaux",
   "Boston",
   "Chicago",
-  "Equalrome",
   "Florence",
-  "Futurerome",
   "Karlsruhe",
   "Milan",
-  "Munich",
+  "Munich (city)",
   "Málaga",
   "Nantes",
   "New_york",
-  "Paris",
+  "Paris (fua)",
+  "Paris (city)",
   "Porto",
   "Rome",
+  "Rome (metro d)",
   "Seattle",
   "Stockholm",
   "Valencia",
@@ -34,10 +33,6 @@ const CITIES_CENTERS = [
     13.401636
   ],
   [
-    48.842644,
-    2.314062
-  ],
-  [
     44.857626,
     -0.573386
   ],
@@ -50,16 +45,8 @@ const CITIES_CENTERS = [
     -87.686584
   ],
   [
-    41.885773,
-    12.460808
-  ],
-  [
     43.779989,
     11.245576
-  ],
-  [
-    41.885773,
-    12.460808
   ],
   [
     49.011652,
@@ -86,12 +73,20 @@ const CITIES_CENTERS = [
     -73.938666
   ],
   [
+    48.842644,
+    2.314062
+  ],
+  [
     48.856397,
     2.343267
   ],
   [
     41.161958,
     -8.620628
+  ],
+  [
+    41.885773,
+    12.460808
   ],
   [
     41.885773,

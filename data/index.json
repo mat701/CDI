@@ -18,15 +18,6 @@
     "zoom": 10
   },
   {
-    "slug": "bigparis",
-    "name": "Bigparis",
-    "center": [
-      48.842644,
-      2.314062
-    ],
-    "zoom": 10
-  },
-  {
     "slug": "bordeaux",
     "name": "Bordeaux",
     "center": [
@@ -54,29 +45,11 @@
     "zoom": 10
   },
   {
-    "slug": "equalrome",
-    "name": "Equalrome",
-    "center": [
-      41.885773,
-      12.460808
-    ],
-    "zoom": 10
-  },
-  {
     "slug": "florence",
     "name": "Florence",
     "center": [
       43.779989,
       11.245576
-    ],
-    "zoom": 10
-  },
-  {
-    "slug": "futurerome",
-    "name": "Futurerome",
-    "center": [
-      41.885773,
-      12.460808
     ],
     "zoom": 10
   },
@@ -99,8 +72,8 @@
     "zoom": 10
   },
   {
-    "slug": "munich",
-    "name": "Munich",
+    "slug": "munich (city)",
+    "name": "Munich (city)",
     "center": [
       48.153223,
       11.547201
@@ -135,8 +108,17 @@
     "zoom": 10
   },
   {
-    "slug": "paris",
-    "name": "Paris",
+    "slug": "paris (FUA)",
+    "name": "Paris (fua)",
+    "center": [
+      48.842644,
+      2.314062
+    ],
+    "zoom": 10
+  },
+  {
+    "slug": "paris (city)",
+    "name": "Paris (city)",
     "center": [
       48.856397,
       2.343267
@@ -155,6 +137,15 @@
   {
     "slug": "rome",
     "name": "Rome",
+    "center": [
+      41.885773,
+      12.460808
+    ],
+    "zoom": 10
+  },
+  {
+    "slug": "rome (metro D)",
+    "name": "Rome (metro d)",
     "center": [
       41.885773,
       12.460808
