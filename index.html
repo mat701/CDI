@@ -311,7 +311,7 @@
           styleColor = f => seismicColor(Number(f.properties?.[valueCol]));
           // Build a simple diverging legend with 9 swatches from -1 .. 1
           const steps = 9;
-          legendColors = Array.from({length:steps}, (_,i)=> cdiColor((i/(steps-1))*2-1));
+          legendColors = Array.from({length:steps}, (_,i)=> seismicColor((i/(steps-1))*2-1));
           legendLabels = ['-1 … 1 scale'];
           legendNote = `${valueCol}`;
         } else {
