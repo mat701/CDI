@@ -48,7 +48,7 @@ header .repo { margin-left:auto }
 .legend-gradient {
   width: 18px;
   flex-shrink: 0;
-  background: linear-gradient(to top, #b2182b 0%, #ffffff 50%, #2166ac 100%);
+  background: linear-gradient(to top, #00004c 0%, #ffffff 50%, #800000 100%);
   border-radius: 3px;
   border: 1px solid #ccc;
 }
