@@ -282,9 +282,9 @@
 
     if (!cityMap){
       cityMap = L.map('map', { zoomControl:true });
-      const base = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap & CARTO', maxZoom:19 }).addTo(cityMap);
+      baseLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap & CARTO', maxZoom:19 }).addTo(cityMap);
       layerControl = L.control.layers({ 'Light': baseLayer }, {}, { collapsed:false }).addTo(cityMap);
-      legend = new Legend(); legend.addTo(cityMap);
+      legend = new Legend({ position: 'topright' }); legend.addTo(cityMap);
     }
 
     cityMap.setView(city.center, city.zoom || 12);
@@ -342,7 +342,7 @@
 
 
         const layer = L.geoJSON(gj, {
-          style: f => ({ color:'none'/*'#333'*/, weight:0.6, fillOpacity:0.85, fillColor: seismicColor(Number(f.properties?.[valueCol]))/*styleColor(f)*/ }),
+          style: f => ({ color:'transparent'/*'#333'*/, weight:0, fillOpacity:0.75, fillColor: seismicColor(Number(f.properties?.[valueCol]))/*styleColor(f)*/ }),
           onEachFeature:(feature, lyr)=>{ /* ... */ }
         });
 
@@ -355,11 +355,12 @@
 
         // now add to map (this will trigger the handler and show the legend immediately)
         layer.addTo(cityMap);
+
         currentOverlays.push(layer);                 // <— track it
         layerControl.addOverlay(layer, def.name);    // register in the control
 
-        overlayGroups[def.name] = layer;
-        layerControl.addOverlay(layer, def.name);
+        /*overlayGroups[def.name] = layer;
+        layerControl.addOverlay(layer, def.name);*/
 
         // (optional) also call once explicitly to be extra safe:
         legend.updateSwatches(legendColors);
