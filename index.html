@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="./favicon.ico" sizes="any">
 </head>
 <body>
 <div class="app">
@@ -212,11 +213,11 @@
         <div class="legend-bar">
           <div class="legend-gradient"></div>
           <div class="legend-labels">
-            <div>-1</div>
-            <div>-0.5</div>
-            <div>0</div>
-            <div>0.5</div>
-            <div>1</div>
+            <div><b>1</b></div>
+            <div><b>0.5</b></div>
+            <div><b>0</b></div>
+            <div><b>-0.5</b></div>
+            <div><b>-1</b></div>
           </div>
         </div>`;
       return (this._div = div);
@@ -350,7 +351,7 @@
         layer.on('add', () => {
           /*legend.updateSwatches(legendColors);
           legend.note(legendNote);*/
-          legend.note(`${valueCol}: -1 → 1`);
+          legend.note(`${valueCol}`);
         });
 
         // now add to map (this will trigger the handler and show the legend immediately)
