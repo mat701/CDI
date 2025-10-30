@@ -343,7 +343,7 @@
 
 
         const layer = L.geoJSON(gj, {
-          style: f => ({ color:'transparent'/*'#333'*/, weight:0, fillOpacity:0.75, fillColor: seismicColor(Number(f.properties?.[valueCol]))/*styleColor(f)*/ }),
+          style: f => ({ color:'transparent'/*'#333'*/, weight:0, fillOpacity:0.65, fillColor: seismicColor(Number(f.properties?.[valueCol]))/*styleColor(f)*/ }),
           onEachFeature:(feature, lyr)=>{ /* ... */ }
         });
 

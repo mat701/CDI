@@ -66,3 +66,20 @@ header .repo { margin-left:auto }
   font-size: 0.8rem;
   color: #475569;
 }
+
+#homeLink {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+.site-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  margin-right: 0.5rem;
+  border-radius: 6px;
+  transition: transform 0.2s ease;
+}
+.site-icon:hover {
+  transform: scale(1.1);
+}
