@@ -124,44 +124,58 @@
   // =====================
   function fmt(v){ return Number.isFinite(v) ? new Intl.NumberFormat().format(v) : 'n/a'; }
 
-  function seismicColor(v) {
-    if (!Number.isFinite(v)) return '#cccccc';
-    const t = Math.max(-1, Math.min(1, v)); // clamp to [-1,1]
+  const BLUE  = [0x00, 0x00, 0x4C];   // ~seismic min
+  const MID   = [0xF0, 0xF0, 0xF0];   // softer mid (try F7F7F7, EDEDED, etc.)
+  const RED   = [0x80, 0x00, 0x00];   // ~seismic max
 
-    // Define color anchors (same as seismic extremes)
-    const blue = [0x00, 0x00, 0x4C];
-    const white = [0xFF, 0xFF, 0xFF];
-    const red = [0x80, 0x00, 0x00];
-
-    function lerp(a, b, t) { return a + (b - a) * t; }
-
-    // Nonlinear easing function — try exponent 0.5 (sqrt) or others
-    function ease(u, power = 0.5) {
-      return Math.sign(u) * Math.pow(Math.abs(u), power);
-    }
-
-    // apply easing to exaggerate extremes
-    const e = ease(t, 0.5); // 0.5 makes colors start sooner, 1 = linear
-
-    let rgb;
-    if (e < 0) { // blue → white
-      const u = e + 1; // map [-1,0] → [0,1]
-      rgb = [
-        lerp(blue[0], white[0], u),
-        lerp(blue[1], white[1], u),
-        lerp(blue[2], white[2], u)
-      ];
-    } else { // white → red
-      const u = e;
-      rgb = [
-        lerp(white[0], red[0], u),
-        lerp(white[1], red[1], u),
-        lerp(white[2], red[2], u)
-      ];
-    }
-
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function toHex(rgb) {
     return '#' + rgb.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
   }
+
+  /**
+   * Piecewise-linear color:
+   * v in [-1, 0]: BLUE → MID
+   * v in [ 0, 1]: MID  → RED
+   */
+  const SEISMIC_COLORS = [
+    { stop: 0.00, rgb: [0x00, 0x00, 0x4C] },  // deep blue
+    { stop: 0.25, rgb: [0x6E, 0x8B, 0xC6] },  // light blue
+    { stop: 0.50, rgb: [0xFF, 0xFF, 0xFF] },  // white
+    { stop: 0.75, rgb: [0xD6, 0x83, 0x83] },  // light red
+    { stop: 1.00, rgb: [0x80, 0x00, 0x00] }   // dark red
+  ];
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function toHex(rgb) {
+    return '#' + rgb.map(v => Math.round(v).toString(16).padStart(2,'0')).join('');
+  }
+
+  function seismicColor(v) {
+    if (!Number.isFinite(v)) return '#cccccc';
+    const t = Math.max(-1, Math.min(1, v));      // clamp
+    const x = (t + 1) / 2;                       // normalize to [0,1]
+
+    // find the two color stops surrounding x
+    let lower = SEISMIC_COLORS[0], upper = SEISMIC_COLORS[SEISMIC_COLORS.length - 1];
+    for (let i = 0; i < SEISMIC_COLORS.length - 1; i++) {
+      if (x >= SEISMIC_COLORS[i].stop && x <= SEISMIC_COLORS[i + 1].stop) {
+        lower = SEISMIC_COLORS[i];
+        upper = SEISMIC_COLORS[i + 1];
+        break;
+      }
+    }
+
+    const u = (x - lower.stop) / (upper.stop - lower.stop);
+    const rgb = [
+      lerp(lower.rgb[0], upper.rgb[0], u),
+      lerp(lower.rgb[1], upper.rgb[1], u),
+      lerp(lower.rgb[2], upper.rgb[2], u)
+    ];
+    return toHex(rgb);
+  }
+
 
   function makeQuantileScale(values, n = 7) {
     const sorted = values.filter(v => Number.isFinite(v)).sort((a,b) => a-b);
@@ -294,7 +308,7 @@
         // Determine color function
         let styleColor, legendColors, legendLabels, legendNote;
         if (def.join){
-          styleColor = f => cdiColor(Number(f.properties?.[valueCol]));
+          styleColor = f => seismicColor(Number(f.properties?.[valueCol]));
           // Build a simple diverging legend with 9 swatches from -1 .. 1
           const steps = 9;
           legendColors = Array.from({length:steps}, (_,i)=> cdiColor((i/(steps-1))*2-1));
@@ -311,7 +325,7 @@
 
 
         const layer = L.geoJSON(gj, {
-          style: f => ({ color:'none'/*'#333'*/, weight:0.6, fillOpacity:0.85, fillColor: styleColor(f) }),
+          style: f => ({ color:'none'/*'#333'*/, weight:0.6, fillOpacity:0.85, fillColor: seismicColor(Number(f.properties?.[valueCol]))/*styleColor(f)*/ }),
           onEachFeature:(feature, lyr)=>{ /* ... */ }
         });
 
