@@ -49,7 +49,7 @@ header .repo { margin-left:auto }
   width: 18px;
   flex-shrink: 0;
   background: linear-gradient(
-    to top,
+    to bottom,
     #800000 0%,
     #d68383 25%,
     #ffffff 50%,
