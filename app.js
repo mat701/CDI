@@ -1,5 +1,6 @@
+// Main app script
+console.log("App loaded");
 <script>
-
   // Global list to be filled from data/index.json
   let CITIES = [];
 
