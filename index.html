@@ -129,7 +129,7 @@
     if (!Number.isFinite(v)) return '#cccccc';
     const t = Math.max(-1, Math.min(1, v)); // clamp
     // Colors: blue #2166ac -> white #ffffff -> red #b2182b
-    const blue = [0x00,0x00,0x8E], white=[0xff,0xff,0xff], red=[0xb2,0x18,0x2b];
+    const blue = [0x00,0x00,0x4C], white=[0xff,0xff,0xff], red=[0x80,0x00,0x00];
     function lerp(a,b,t){ return a + (b-a)*t; }
     let rgb;
     if (t < 0){ // blue -> white
