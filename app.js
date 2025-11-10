@@ -87,7 +87,7 @@ async function boot() {
   document.getElementById('search').addEventListener('input', (e)=> renderList(e.target.value));
   document.getElementById('clear').addEventListener('click', ()=>{ document.getElementById('search').value=''; renderList(''); });
 
-  router() {
+  function router() {
     const hash = location.hash || '#/';
     if (hash.startsWith('#/city/')) {
       // extract slug from the hash and decode it
@@ -102,7 +102,8 @@ async function boot() {
       document.getElementById('subtitle').textContent = '';
       document.getElementById('view-landing').style.display = 'grid';
       document.getElementById('view-city').style.display = 'none';
-    }}
+    }
+  }
 }
 
 // =====================
