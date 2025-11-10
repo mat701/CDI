@@ -49,7 +49,19 @@ async function boot() {
 
   const markers = [];
   CITIES.forEach(c => {
-    const m = L.marker(c.center).addTo(landingMap).bindPopup(`<b>${c.name}</b><br/><a href="#/city/${c.slug}">Open map</a>`);
+    const m = L.marker(c.center)
+      .addTo(landingMap)
+      .bindPopup(
+        `<b>${c.name}</b><br/><a href="#/city/${encodeURIComponent(c.slug)}">Open map</a>`
+      );
+
+
+    // list click
+    /*card.onclick = () => goCity(c.slug);*/
+
+    // goCity: encode for the hash
+    function goCity(slug){ location.hash = `#/city/${encodeURIComponent(slug)}`; }
+    /*const m = L.marker(c.center).addTo(landingMap).bindPopup(`<b>${c.name}</b><br/><a href="#/city/${c.slug}">Open map</a>`);*/
     m.on('click', () => goCity(c.slug));
     markers.push(m);
   });
@@ -75,7 +87,22 @@ async function boot() {
   document.getElementById('search').addEventListener('input', (e)=> renderList(e.target.value));
   document.getElementById('clear').addEventListener('click', ()=>{ document.getElementById('search').value=''; renderList(''); });
 
-  router()
+  router() {
+    const hash = location.hash || '#/';
+    if (hash.startsWith('#/city/')) {
+      // extract slug from the hash and decode it
+      const raw = hash.split('/')[2] || '';
+      const slug = decodeURIComponent(raw);
+
+      document.getElementById('title').textContent = 'City • ' + slug;
+      loadCity(slug);
+    } else {
+      // back to landing view
+      document.getElementById('title').textContent = 'Car Dependency Index';
+      document.getElementById('subtitle').textContent = '';
+      document.getElementById('view-landing').style.display = 'grid';
+      document.getElementById('view-city').style.display = 'none';
+    }}
 }
 
 // =====================
