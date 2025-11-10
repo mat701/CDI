@@ -88,24 +88,6 @@ async function boot() {
   document.getElementById('clear').addEventListener('click', ()=>{ document.getElementById('search').value=''; renderList(''); });
 }
 
-/*function router() {
-  const hash = location.hash || '#/';
-  if (hash.startsWith('#/city/')) {
-    // extract slug from the hash and decode it
-    const raw = hash.split('/')[2] || '';
-    const slug = decodeURIComponent(raw);
-
-    document.getElementById('title').textContent = 'City • ' + slug;
-    loadCity(slug);
-  } else {
-    // back to landing view
-    document.getElementById('title').textContent = 'Car Dependency Index';
-    document.getElementById('subtitle').textContent = '';
-    document.getElementById('view-landing').style.display = 'grid';
-    document.getElementById('view-city').style.display = 'none';
-  }
-}*/
-
 // =====================
 // COLOR SCALES
 // =====================
@@ -175,20 +157,6 @@ function makeQuantileScale(values, n = 7) {
 // =====================
 // LEGEND CONTROL
 // =====================
-/*const Legend = L.Control.extend({
-  options: { position: 'bottomright' },
-  onAdd: function(){ const d = L.DomUtil.create('div','legend'); d.innerHTML = '<b>Legend</b><div class="scale" id="legend-scale"></div><div class="muted" id="legend-note"></div>'; this._div=d; return d; },
-  updateSwatches: function(colors, labels){
-    const scale=this._div.querySelector('#legend-scale');
-    scale.innerHTML='';
-    for(let i=0;i<colors.length;i++){
-      const sw=document.createElement('div'); sw.className='swatch'; sw.style.background=colors[i]; sw.title=labels && labels[i] ? labels[i] : '';
-      scale.appendChild(sw);
-    }
-    this._div.querySelector('#legend-note').textContent = '';
-  },
-  note: function(text){ this._div.querySelector('#legend-note').textContent = text || ''; }
-});*/
 const Legend = L.Control.extend({
   options: { position: 'topright' },
 
@@ -330,7 +298,23 @@ async function loadCity(slug){
 
       const layer = L.geoJSON(gj, {
         style: f => ({ color:'transparent'/*'#333'*/, weight:0, fillOpacity:0.65, fillColor: seismicColor(Number(f.properties?.[valueCol]))/*styleColor(f)*/ }),
-        onEachFeature:(feature, lyr)=>{ /* ... */ }
+        onEachFeature: (feature, lyr) => {
+          const props = feature.properties || {};
+          const cdiVal = Number(props[valueCol]);
+          const cdiText = Number.isFinite(cdiVal) ? cdiVal.toFixed(3) : 'n/a';
+
+          // tooltip on hover
+          lyr.bindTooltip(`CDI: ${cdiText}`, {
+            direction: 'top',
+            sticky: true,
+            opacity: 0.9
+          });
+
+          // popup on click (optional)
+          lyr.bindPopup(
+            `<b>${city.name}</b><br>CDI: <b>${cdiText}</b>`
+          );
+        }
       });
 
       // attach handler BEFORE adding the layer
@@ -346,29 +330,10 @@ async function loadCity(slug){
       currentOverlays.push(layer);                 // <— track it
       layerControl.addOverlay(layer, def.name);    // register in the control
 
-      /*overlayGroups[def.name] = layer;
-      layerControl.addOverlay(layer, def.name);*/
-
       // (optional) also call once explicitly to be extra safe:
       legend.updateSwatches(legendColors);
       legend.note(legendNote);
 
-      /*const layer = L.geoJSON(gj, {
-        style: f => ({ color:'#333', weight:0.6, fillOpacity:0.85, fillColor: styleColor(f) }),
-        onEachFeature:(feature, lyr)=>{
-          const p=feature.properties||{};
-          const cdi = def.join ? Number(p[valueCol]) : undefined;
-          const showVal = def.join ? `${valueCol}: <b>${Number.isFinite(cdi)? cdi.toFixed(3):'n/a'}</b>` : `${def.valueProp}: <b>${fmt(Number(p[def.valueProp]))}</b>`;
-          const keys=Object.keys(p).filter(k=>!['uid','id'].includes(k));
-          const rows=keys.map(k=>`<tr><td><strong>${k}</strong></td><td>${p[k]}</td></tr>`).join('');
-          lyr.bindPopup(`<div><b>${def.name}</b><br/>${showVal}<table>${rows}</table></div>`);
-        }
-      }).addTo(cityMap);
-
-      overlayGroups[def.name]=layer;
-      layerControl.addOverlay(layer, def.name);
-      // Update legend when toggled
-      layer.on('add', ()=> { legend.updateSwatches(legendColors); legend.note(legendNote); });*/
     } catch(e){ console.error(e); }
   }
 
@@ -383,32 +348,6 @@ function goHome(){ location.hash = '#/'; }
 document.getElementById('backBtn').addEventListener('click', goHome);
 
 // simple hash router
-/*function router(){
-  const hash = location.hash || '#/';
-  if (hash.startsWith('#/city/')){
-    const slug = hash.split('/')[2];
-    document.getElementById('title').textContent = 'City • ' + slug;
-    loadCity(slug);
-  } else {
-    document.getElementById('title').textContent = 'Car Dependency Index';
-    document.getElementById('subtitle').textContent = '';
-    document.getElementById('view-landing').style.display='grid';
-    document.getElementById('view-city').style.display='none';
-  }
-}*/
-/*function router(){
-  const hash = location.hash || '#/';
-  if (hash.startsWith('#/city/')){
-    const slug = hash.split('/')[2];
-    document.getElementById('title').textContent = 'City • ' + slug;
-    loadCity(slug);
-  } else {
-    document.getElementById('title').textContent = 'Car Dependency Index';
-    document.getElementById('subtitle').textContent = '';
-    document.getElementById('view-landing').style.display='grid';
-    document.getElementById('view-city').style.display='none';
-  }
-}*/
 function router() {
   const hash = location.hash || '#/';
   if (hash.startsWith('#/city/')) {
