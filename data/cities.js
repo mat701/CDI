@@ -16,7 +16,7 @@ const CITIES_NAMES = [
   "Paris (city)",
   "Porto",
   "Rome",
-  "Rome (metro d)",
+  "Rome (metro d scenario)",
   "Seattle",
   "Stockholm",
   "Valencia",
