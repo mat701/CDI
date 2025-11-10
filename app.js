@@ -86,25 +86,25 @@ async function boot() {
 
   document.getElementById('search').addEventListener('input', (e)=> renderList(e.target.value));
   document.getElementById('clear').addEventListener('click', ()=>{ document.getElementById('search').value=''; renderList(''); });
-
-  function router() {
-    const hash = location.hash || '#/';
-    if (hash.startsWith('#/city/')) {
-      // extract slug from the hash and decode it
-      const raw = hash.split('/')[2] || '';
-      const slug = decodeURIComponent(raw);
-
-      document.getElementById('title').textContent = 'City • ' + slug;
-      loadCity(slug);
-    } else {
-      // back to landing view
-      document.getElementById('title').textContent = 'Car Dependency Index';
-      document.getElementById('subtitle').textContent = '';
-      document.getElementById('view-landing').style.display = 'grid';
-      document.getElementById('view-city').style.display = 'none';
-    }
-  }
 }
+
+/*function router() {
+  const hash = location.hash || '#/';
+  if (hash.startsWith('#/city/')) {
+    // extract slug from the hash and decode it
+    const raw = hash.split('/')[2] || '';
+    const slug = decodeURIComponent(raw);
+
+    document.getElementById('title').textContent = 'City • ' + slug;
+    loadCity(slug);
+  } else {
+    // back to landing view
+    document.getElementById('title').textContent = 'Car Dependency Index';
+    document.getElementById('subtitle').textContent = '';
+    document.getElementById('view-landing').style.display = 'grid';
+    document.getElementById('view-city').style.display = 'none';
+  }
+}*/
 
 // =====================
 // COLOR SCALES
@@ -383,6 +383,19 @@ function goHome(){ location.hash = '#/'; }
 document.getElementById('backBtn').addEventListener('click', goHome);
 
 // simple hash router
+/*function router(){
+  const hash = location.hash || '#/';
+  if (hash.startsWith('#/city/')){
+    const slug = hash.split('/')[2];
+    document.getElementById('title').textContent = 'City • ' + slug;
+    loadCity(slug);
+  } else {
+    document.getElementById('title').textContent = 'Car Dependency Index';
+    document.getElementById('subtitle').textContent = '';
+    document.getElementById('view-landing').style.display='grid';
+    document.getElementById('view-city').style.display='none';
+  }
+}*/
 function router(){
   const hash = location.hash || '#/';
   if (hash.startsWith('#/city/')){
