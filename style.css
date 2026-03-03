@@ -76,8 +76,16 @@ header .repo { margin-left:auto }
   max-width: 360px;
   margin: 0;                  /* override previous margin */
   pointer-events: auto;
+  background: #ffffff;      /* fully opaque white */
+  opacity: 1;               /* ensure no inherited transparency */
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-
+.info-box b {
+  display: block;
+  text-align: center;
+  margin-bottom: 0.4rem;
+}
 /* landing: attach to the landing map only */
 #info-landing{
   /* move it from sidebar flow to the map overlay */
