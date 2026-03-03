@@ -68,23 +68,34 @@ header .repo { margin-left:auto }
   color: #475569;
 }
 /* make info boxes float over the map */
-.info-box{
+.info-box {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 1000;              /* above tiles */
-  max-width: 360px;
-  margin: 0;                  /* override previous margin */
-  pointer-events: auto;
-  background: #ffffff;      /* fully opaque white */
-  opacity: 1;               /* ensure no inherited transparency */
-  border: 1px solid #cbd5e1;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  top: 14px;
+  left: 14px;
+  z-index: 1000;
+
+  max-width: 340px;
+  padding: 0.8rem 0.9rem;
+
+  background: #f8fafc;                /* same tone as side panel */
+  border: 1px solid #e2e8f0;          /* same border color as cards */
+  border-radius: 0.7rem;
+
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(2px);
+
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 .info-box b {
   display: block;
   text-align: center;
-  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+  margin-bottom: 0.45rem;
+  color: #0f172a;
+}
+.info-box:hover {
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
 }
 /* landing: attach to the landing map only */
 #info-landing{
