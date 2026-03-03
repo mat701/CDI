@@ -66,7 +66,15 @@ header .repo { margin-left:auto }
   font-size: 0.8rem;
   color: #475569;
 }
-
+.info-box{
+  margin: .75rem 0;
+  padding: .65rem .75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: .6rem;
+  color: #0f172a;
+  font-size: .9rem;
+}
 #homeLink {
   display: flex;
   align-items: center;
