@@ -18,7 +18,8 @@ header .repo { margin-left:auto }
 .city-card:hover { background:#eef2ff }
 .muted { color:#64748b; font-size:.85rem }
 
-#mapLanding, #map { width:100%; height:100% }
+#mapLanding, #map { width:100%; height:100%; position: relative; }
+
 
 .toolbar { display:flex; gap:.5rem; align-items:center; padding:.5rem 1rem; border-bottom:1px solid #e2e8f0; background:white }
 .btn { padding:.45rem .7rem; border:1px solid #cbd5e1; border-radius:.55rem; background:white; cursor:pointer }
@@ -66,14 +67,26 @@ header .repo { margin-left:auto }
   font-size: 0.8rem;
   color: #475569;
 }
+/* make info boxes float over the map */
 .info-box{
-  margin: .75rem 0;
-  padding: .65rem .75rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: .6rem;
-  color: #0f172a;
-  font-size: .9rem;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;              /* above tiles */
+  max-width: 360px;
+  margin: 0;                  /* override previous margin */
+  pointer-events: auto;
+}
+
+/* landing: attach to the landing map only */
+#info-landing{
+  /* move it from sidebar flow to the map overlay */
+  position: absolute;
+}
+
+/* city: attach to the city map only */
+#info-city{
+  position: absolute;
 }
 #homeLink {
   display: flex;
