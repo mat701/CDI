@@ -44,7 +44,8 @@ document.getElementById('repoLink').href = REPO_URL;
 async function boot() {
   await loadCitiesManifest();
 
-  const landingMap = L.map('mapLanding', { zoomControl: true }).setView([42.5, 12.5], 5);
+  const landingMap = L.map('mapLanding', { zoomControl: false }).setView([42.5, 12.5], 5);
+  L.control.zoom({ position: 'bottomright' }).addTo(landingMap);
   const baseLanding = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap & CARTO', maxZoom: 19 }).addTo(landingMap);
 
   const markers = [];
@@ -236,7 +237,9 @@ async function loadCity(slug){
   document.getElementById('cityBreadcrumb').textContent = city.name;
 
   if (!cityMap){
-    cityMap = L.map('map', { zoomControl:true });
+    cityMap = L.map('map', { zoomControl:false });
+    // add zoom control manually in bottom-right
+    L.control.zoom({ position: 'bottomright' }).addTo(cityMap);
     baseLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap & CARTO', maxZoom:19 }).addTo(cityMap);
     layerControl = L.control.layers({ 'Light': baseLayer }, {}, { collapsed:false }).addTo(cityMap);
     legend = new Legend({ position: 'topright' }); legend.addTo(cityMap);
