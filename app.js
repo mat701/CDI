@@ -409,7 +409,7 @@ function cdiBucketColor(b) {
 let features = [];           // currently rendered set (points to mapFeatures or cartogramFeatures)
 let mapFeatures = [];        // geographic hex layer
 let cartogramFeatures = null;// Dorling cartogram (lazy-loaded; null = not yet, false = unavailable)
-let viewMode = "map";        // "map" | "cartogram"
+let viewMode = "cartogram";        // "map" | "cartogram"
 let selectedId = null, hoveredId = null;
 let cdiMin = -1, cdiMax = 1;
 let HEX_ALPHA = 0.8;
@@ -511,35 +511,65 @@ function syncViewToggleUI() {
 
 document.getElementById("view-toggle").addEventListener("click", async () => {
   if (!currentCity) return;
+  const slug = currentCity.slug;
+
   if (viewMode === "map") {
     // Switch to cartogram. If still loading, await it now.
     if (cartogramFeatures === null) {
-      cartogramFeatures = await loadCartogramFeatures(currentCity.slug);
+      showMapLoading(true);
+      cartogramFeatures = await loadCartogramFeatures(slug);
+      showMapLoading(false);
+      if (currentCity?.slug !== slug) return;
     }
-    if (cartogramFeatures === false || !cartogramFeatures) {
+    if (!cartogramFeatures || !cartogramFeatures.length) {
       syncViewToggleUI();
       return;
     }
     viewMode = "cartogram";
     features = cartogramFeatures;
+
   } else {
+    // Switch to geographic map. If the background load hasn't finished, await it.
+    if (!mapFeatures || !mapFeatures.length) {
+      showMapLoading(true);
+      const loaded = await loadCityFeatures(slug);
+      showMapLoading(false);
+      if (currentCity?.slug !== slug) return;
+      if (!loaded || !loaded.length) {
+        // Couldn't load — stay on cartogram.
+        syncViewToggleUI();
+        return;
+      }
+      mapFeatures = loaded;
+    }
     viewMode = "map";
     features = mapFeatures;
   }
+
+  showMapLoading(true);
   syncViewToggleUI();
-  // Refit Leaflet to whichever set is now active so the cartogram (which lives
-  // in lat/lng space but is not geographic) frames itself correctly.
   refitMapToFeatures();
   resizeCanvas();
   drawCanvas();
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  showMapLoading(false);
 });
 
 function refitMapToFeatures() {
   if (!cityLeaflet || !features.length) return;
-  const lngs = features.flatMap((f) => f.geometry.coordinates.flatMap((r) => r.map((p) => p[0])));
-  const lats = features.flatMap((f) => f.geometry.coordinates.flatMap((r) => r.map((p) => p[1])));
+  let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+  for (const f of features) {
+    for (const ring of f.geometry.coordinates) {
+      for (const [x, y] of ring) {
+        if (x < minLng) minLng = x;
+        if (x > maxLng) maxLng = x;
+        if (y < minLat) minLat = y;
+        if (y > maxLat) maxLat = y;
+      }
+    }
+  }
   cityLeaflet.fitBounds(
-    [[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]],
+    [[minLat, minLng], [maxLat, maxLng]],
     { padding: [10, 10], animate: false }
   );
 }
@@ -1036,7 +1066,7 @@ async function showCityView(slug) {
   }
 
   // ── Reset state and tear down the previous city IMMEDIATELY (before any await).
-  features = []; mapFeatures = []; cartogramFeatures = null; viewMode = "map";
+  features = []; mapFeatures = []; cartogramFeatures = null; viewMode = "cartogram";
   selectedId = null; hoveredId = null;
 
   if (cityLeaflet) {
@@ -1077,55 +1107,86 @@ async function showCityView(slug) {
   showMapLoading(true);
 
   const loadStartedFor = slug;
-  const loaded = await loadCityFeatures(slug);
 
-  // Bail out if the user clicked another city while this one was loading.
-  if (currentCity?.slug !== loadStartedFor) {
-    showMapLoading(false);
-    return;
-  }
+  // ── Load the cartogram FIRST (it's the default view).
+  const cg = await loadCartogramFeatures(slug);
+  if (currentCity?.slug !== loadStartedFor) { showMapLoading(false); return; }
 
-  if (!loaded) {
-    showMapLoading(false);
-    document.getElementById("info-box").innerHTML =
-      `<p style="color:#b03a2e">Could not load data for ${city.name}.</p>`;
-    return;
-  }
-  // Data is here — hide the spinner now, even before rendering kicks in.
-  // For very large cities (Paris FUA), drawCanvas() can take seconds; we don't
-  // want the spinner to obscure the map while hexes are progressively painting.
-  showMapLoading(false);
-
-  if (window.innerWidth <= 1024) {
-    document.getElementById("map-panel").style.display = "block";
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-    cityLeaflet.invalidateSize({ animate: false });
-  }
-
-  mapFeatures = loaded;
-  features = mapFeatures;
-
-  // Prefetch the cartogram in the background so the toggle is instant.
-  loadCartogramFeatures(slug).then((cg) => {
-    if (currentCity?.slug !== slug) return;
+  if (cg && cg.length) {
+    // Cartogram available → use it as the initial view.
     cartogramFeatures = cg;
+    viewMode = "cartogram";
+    features = cartogramFeatures;
+
+    if (window.innerWidth <= 1024) {
+      document.getElementById("map-panel").style.display = "block";
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      cityLeaflet.invalidateSize({ animate: false });
+    }
+
+    // Fit bounds to the cartogram and render.
+    refitMapToFeatures();
+    resizeCanvas();
+    drawCanvas();
+    buildScatter();
+    updateCityStats();
     syncViewToggleUI();
-  });
+    updateInfoBox(null);
+    showMapLoading(false);   // hide immediately, no rAF dance
 
-  // Now that data is here, refit precisely to the hex bounds.
-  const lngs = features.flatMap((f) => f.geometry.coordinates.flatMap((r) => r.map((p) => p[0])));
-  const lats = features.flatMap((f) => f.geometry.coordinates.flatMap((r) => r.map((p) => p[1])));
-  cityLeaflet.fitBounds([[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]],
-    { padding: [10, 10], animate: false });
-  resizeCanvas(); drawCanvas(); buildScatter(); updateCityStats();
-  syncViewToggleUI();
-  updateInfoBox(null);
+    // Wait for the browser to actually paint the hexes before hiding the spinner.
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    showMapLoading(false);
 
+    // Load the geographic hexes in the background so the toggle is instant.
+    loadCityFeatures(slug).then((loaded) => {
+      if (currentCity?.slug !== loadStartedFor) return;
+      if (loaded) mapFeatures = loaded;
+      syncViewToggleUI();
+    });
+
+  } else {
+    // No cartogram for this city → fall back to geographic map.
+    cartogramFeatures = cg; // false/null — toggle stays disabled
+    viewMode = "map";
+
+    const loaded = await loadCityFeatures(slug);
+    if (currentCity?.slug !== loadStartedFor) { showMapLoading(false); return; }
+
+    if (!loaded) {
+      showMapLoading(false);
+      document.getElementById("info-box").innerHTML =
+        `<p style="color:#b03a2e">Could not load data for ${city.name}.</p>`;
+      return;
+    }
+
+    mapFeatures = loaded;
+    features = mapFeatures;
+
+    if (window.innerWidth <= 1024) {
+      document.getElementById("map-panel").style.display = "block";
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      cityLeaflet.invalidateSize({ animate: false });
+    }
+
+    refitMapToFeatures();
+    resizeCanvas();
+    drawCanvas();
+    buildScatter();
+    updateCityStats();
+    syncViewToggleUI();
+    updateInfoBox(null);
+
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    showMapLoading(false);
+  }
 }
 
+let _loadingHideTimer = null;
 function showMapLoading(on) {
   let el = document.getElementById("map-loading");
   if (on) {
+    if (_loadingHideTimer) { clearTimeout(_loadingHideTimer); _loadingHideTimer = null; }
     if (!el) {
       el = document.createElement("div");
       el.id = "map-loading";
@@ -1504,5 +1565,5 @@ window.addEventListener("load", async () => {
   await renderCityList();          // initial list (with availability badges)
   buildLandingMarkers();           // async, paints pins as availability resolves
   router();
-  setTimeout(() => document.getElementById("loading").classList.add("fade"), 300);
+  setTimeout(() => document.getElementById("loading")?.classList.add("fade"), 300);
 });
