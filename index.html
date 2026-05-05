@@ -1,61 +1,300 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Car Dependency Index</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="./favicon.ico" sizes="any">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="./favicon.ico" sizes="any" />
 </head>
 <body>
-<div class="app">
-  <header>
-    <a href="#/" id="homeLink">
-      <img src="favicon.ico" alt="Home" class="site-icon" />
-    </a>
-    <h1 id="title">Car Dependency Index</h1>
-    <div id="subtitle" class="muted"></div>
-    <a class="repo" id="repoLink" href="https://github.com/mat701/CDI" target="_blank" rel="noopener">GitHub repository</a>
-  </header>
 
-  <!-- LANDING VIEW -->
-  <div id="view-landing" class="landing">
-    <div class="side">
-      <div class="search">
-        <input id="search" type="search" placeholder="Search cities…" />
-        <button class="btn" id="clear">Clear</button>
-      </div>
-      <div id="cityList" class="cities"></div>
-      <div class="muted" style="margin-top:.75rem">Click a city name or a map pin to open its layers.</div>
-    </div>
-    <div id="mapLanding">
-      <div id="info-landing" class="info-box">
-        <b>What you’re seeing</b><br>
-        Check out how car-dependent is one city by clicking on it.<br>
-        The CDI quantifies the accessibility gap between car travel and public transport.
-      </div>
-    </div>
-  </div>
+<div id="loading" data-i18n="loading">Loading…</div>
+<div id="tooltip"></div>
 
-  <!-- CITY VIEW -->
-  <div id="view-city" style="display:none">
-    <div class="toolbar">
-      <button class="btn" id="backBtn">← Back to all cities</button>
-      <div id="cityBreadcrumb" class="muted"></div>
-    </div>
-    <div id="map">
-      <div id="info-city" class="info-box">
-        <b>City view</b><br>
-        Hexagons are colored by CDI (Car Dependency Index), ranging from -1 (blue, car-free) to 1 (red, car-dependent).
-        Hover a hexagon to see its CDI value.
-      </div>
+<!-- ── About modal ── -->
+<div id="about-overlay" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" id="about-close" aria-label="Close">&times;</button>
+    <h2 data-i18n="about_title">The Car Dependency Index</h2>
+    <p class="modal-subtitle" data-i18n="about_subtitle">Public transport vs. private car accessibility</p>
+    <p data-i18n-html="about_intro">This interactive visualisation accompanies the research paper <a href="https://arxiv.org/abs/2604.01019" target="_blank" rel="noopener"><em>Car Dependency in Urban Accessibility</em></a> by Campanelli, Marzolla, Bruno, Melo &amp; Loreto (2026).</p>
+
+    <h3 data-i18n="about_h_what">What is the CDI?</h3>
+    <p data-i18n-html="about_what">The <strong>Car Dependency Index</strong> measures, for every ~200 m hexagonal cell in a city, how much more reachable opportunities are by private car than by public transport. It is defined as:</p>
+    <div class="formula-box">CDI = (O<sub>car</sub> − O<sub>PT</sub>) / (O<sub>car</sub> + O<sub>PT</sub>)</div>
+    <p data-i18n-html="about_what2">Where O<sub>car</sub> and O<sub>PT</sub> are the opportunity scores reachable by car and public transport respectively.</p>
+
+    <h3 data-i18n="about_h_scale">Reading the scale</h3>
+    <div class="dim-card dim-pt" data-i18n-html="about_pt_card"><strong>CDI &lt; 0 (blue)</strong> — Public transport reaches more opportunities than the car. A car-free life is realistic.</div>
+    <div class="dim-card dim-balanced" data-i18n-html="about_bal_card"><strong>CDI ≈ 0 (white)</strong> — Both modes offer comparable access.</div>
+    <div class="dim-card dim-car" data-i18n-html="about_car_card"><strong>CDI &gt; 0 (red)</strong> — Cars dominate. The greater the value, the more dependent residents are on private vehicles.</div>
+
+    <h3 data-i18n="about_h_read">How to read the visualisation</h3>
+    <p data-i18n="about_read_text">The map (left panel) shows the city divided into ~200 m hexagonal cells, coloured by their CDI value on the diverging blue–red scale. Use the toggle in the top-right of the map to switch to a Dorling cartogram, where each cell is resized by its resident population — empty hexes shrink to nothing, and densely populated ones balloon. The scatter plot (right panel) places each hexagon by its opportunity score by car (x-axis) and by public transport (y-axis). Hexagons on the diagonal are balanced; those below it are car-dependent.</p>
+
+    <h3 data-i18n="about_h_data">Data &amp; methods</h3>
+    <p data-i18n="about_data_text">Cities are covered with H3 resolution-9 hexagons. Walking and driving times are computed via OSRM on OpenStreetMap data; public transport via GTFS feeds and the Connection Scan Algorithm. Driving times include a parking buffer and city-specific traffic delays. POIs from OpenStreetMap. Population from WorldPop.</p>
+
+    <div class="modal-footer">
+      <p data-i18n-html="about_ref"><strong>Reference:</strong> Campanelli B., Marzolla F., Bruno M., Melo H.P.M., Loreto V. (2026). <em>Car Dependency in Urban Accessibility.</em> arXiv:2604.01019. <a href="https://arxiv.org/abs/2604.01019" target="_blank" rel="noopener">arxiv.org/abs/2604.01019</a></p>
     </div>
   </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<!-- ── Help modal (scatter) ── -->
+<div id="help-overlay" class="modal-overlay">
+  <div class="modal modal-sm">
+    <button class="modal-close" id="help-close" aria-label="Close">&times;</button>
+    <h2 data-i18n="help_scatter_title">Reading the scatter plot</h2>
+    <p data-i18n="help_scatter_intro">Each dot is a hexagonal cell. Its position encodes:</p>
+    <ul>
+      <li data-i18n-html="help_scatter_x"><strong>X-axis (Car):</strong> POIs reachable within ~60 minutes by private car.</li>
+      <li data-i18n-html="help_scatter_y"><strong>Y-axis (Public transport):</strong> POIs reachable within ~60 minutes by transit.</li>
+    </ul>
+    <p data-i18n="help_scatter_diag">The dashed diagonal marks <strong>CDI = 0</strong>: equal access by both modes. Points <em>below</em> the line are car-dependent (red); <em>above</em> are public-transport-favoured (blue).</p>
+    <p data-i18n="help_scatter_color">Dot colour shows the CDI value on the same blue–red diverging scale used on the map.</p>
+    <p data-i18n="help_scatter_interact">Hover or click on a dot to cross-highlight it on the map.</p>
+  </div>
+</div>
+
+<!-- ── Map help modal ── -->
+<div id="map-help-overlay" class="modal-overlay">
+  <div class="modal modal-sm">
+    <button class="modal-close" id="map-help-close" aria-label="Close">&times;</button>
+    <h2 data-i18n="help_map_title">Reading the map</h2>
+    <p data-i18n="help_map_intro">Each hexagon (~200 m) is coloured by its CDI value:</p>
+    <div class="cdi-scale-explain">
+      <div class="cdi-scale-bar"></div>
+      <div class="cdi-scale-labels">
+        <span>−1 PT-favoured</span>
+        <span>0 Balanced</span>
+        <span>+1 Car-dependent</span>
+      </div>
+    </div>
+    <p data-i18n="help_map_colour">Deep blue = public transport reaches far more opportunities than driving. Deep red = the car is essentially required to reach the city's amenities.</p>
+    <p data-i18n="help_map_filter">Use the slider in the sidebar to focus only on hexagons within a CDI range — useful for spotting either car-trapped or transit-rich areas.</p>
+    <p data-i18n="help_map_interact">Click any hexagon to inspect its full breakdown. Hover to cross-highlight it on the scatter plot.</p>
+  </div>
+</div>
+
+<!-- ── Stat hint popover (reusable) ── -->
+<div id="stat-popover" class="stat-popover"></div>
+
+<header>
+  <h1>
+    <a id="title-link" href="#/">
+      <img src="favicon.ico" alt="Home" />
+      Car Dependency <span>Index</span>
+    </a>
+  </h1>
+  <span id="header-sub" data-i18n="header_sub">Public transport vs. private car</span>
+  <button id="back-btn" data-i18n="back_btn">World Map</button>
+  <div class="header-right">
+    <button id="lang-btn" class="lang-toggle" title="Switch language">IT</button>
+    <button id="stats-btn" class="header-link" title="Compare cities" data-i18n="stats_btn">Compare</button>
+    <button id="about-btn" class="header-link" title="About the index" data-i18n="about_btn">About</button>
+    <a id="paper-link" class="header-link" href="https://arxiv.org/abs/2604.01019" target="_blank" rel="noopener" data-i18n="paper_btn">Paper ↗</a>
+    <a id="repo-link" class="header-link" href="https://github.com/mat701/CDI" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</header>
+
+<div id="app">
+  <!-- ── LANDING VIEW ── -->
+  <div id="view-landing">
+    <div id="landing-side">
+      <button id="mobile-landing-close" class="collapse-btn" title="Close" style="display:none">✕</button>
+      <div>
+        <p class="panel-title" data-i18n="cities_title">Cities</p>
+        <div class="search-row">
+          <input id="search-input" type="search" data-i18n-placeholder="search_placeholder" placeholder="Search…" />
+        </div>
+      </div>
+      <div id="city-list"></div>
+      <div class="landing-hint">
+        <p data-i18n-html="landing_hint">Explore <strong>car dependency</strong> across cities. Each cell compares the access to opportunities by private car against public transport.</p>
+        <p style="margin-top:6px"><span data-i18n="landing_hint2">Click a city or map pin to begin.</span> <a href="#" id="landing-about-link" data-i18n="learn_more">Learn more →</a></p>
+      </div>
+    </div>
+    <button id="landing-side-toggle" class="edge-toggle" title="Toggle panel">‹</button>
+
+    <div id="landing-map">
+      <button id="mobile-landing-open" class="mobile-search-btn" title="Search cities" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="5"/><path d="M10 10l4.5 4.5"/></svg>
+        <span data-i18n="mobile_search_cities">Search city</span>
+      </button>
+      <div class="info-box" id="info-box-landing">
+        <button class="info-box-close" id="close-info-box" title="Close">✕</button>
+        <b data-i18n="infobox_title">Car Dependency Index</b>
+        <span data-i18n-html="infobox_text">A high-resolution measure of how much more reachable opportunities are <strong>by car</strong> than <strong>by public transport</strong>. Blue cells favour transit; red cells require a car.</span>
+        <div class="info-box-cite">
+          <span data-i18n="infobox_cite">Based on</span> <a href="https://arxiv.org/abs/2604.01019" target="_blank" rel="noopener">Campanelli et al., 2026</a>
+        </div>
+      </div>
+      <button id="expand-info" class="expand-btn" title="Show explanation" style="display:none">ⓘ</button>
+    </div>
+  </div>
+
+  <!-- ── CITY VIEW ── -->
+  <div id="view-city">
+    <div id="mobile-tabs">
+      <button class="mobile-tab active" data-panel="map" data-i18n="label_cartogram">Cartogram</button>
+      <button class="mobile-tab" data-panel="scatter" data-i18n="label_scatter_short">Scatter</button>
+      <button class="mobile-tab" data-panel="sidebar" data-i18n="mobile_info">Info</button>
+    </div>
+
+    <aside id="city-sidebar">
+      <div>
+        <p class="panel-title" data-i18n="cdi_legend_title">CDI scale</p>
+        <div class="cdi-legend">
+          <div class="cdi-legend-bar"></div>
+          <div class="cdi-legend-labels">
+            <span>+1</span>
+            <span>0</span>
+            <span>−1</span>
+          </div>
+          <div class="cdi-legend-anno">
+            <span class="cdi-legend-anno-top" data-i18n="cdi_legend_top">Car-dependent</span>
+            <span class="cdi-legend-anno-mid" data-i18n="cdi_legend_mid">Balanced</span>
+            <span class="cdi-legend-anno-bot" data-i18n="cdi_legend_bot">PT-favoured</span>
+          </div>
+        </div>
+        <p class="legend-explain"><span data-i18n="legend_explain">Each cell is coloured by its CDI.</span> <a href="#" id="legend-about-link" data-i18n="full_explanation">Full explanation →</a></p>
+      </div>
+
+      <div>
+        <p class="panel-title" data-i18n="filter_title">Filter by CDI</p>
+        <div class="range-control">
+          <div class="range-slider-wrap">
+            <input id="cdi-min" type="range" min="-1" max="1" step="0.05" value="-1" />
+            <input id="cdi-max" type="range" min="-1" max="1" step="0.05" value="1" />
+            <div class="range-track"><div class="range-fill" id="range-fill"></div></div>
+          </div>
+          <div class="range-readout">
+            <span class="range-readout-val" id="range-min-val">−1.00</span>
+            <span class="range-readout-sep">→</span>
+            <span class="range-readout-val" id="range-max-val">+1.00</span>
+          </div>
+          <button class="range-reset" id="range-reset" data-i18n="filter_reset">Reset filter</button>
+        </div>
+      </div>
+
+      <div>
+        <p class="panel-title" data-i18n="city_summary_title">City summary</p>
+        <div class="stat-row"><span class="stat-label" data-i18n="stat_hexagons">Total hexagons</span><span class="stat-value" id="s-hex">—</span></div>
+        <div class="stat-row"><span class="stat-label"><span data-i18n="stat_pop">Resident population</span></span><span class="stat-value" id="s-pop">—</span></div>
+        <div class="stat-row"><span class="stat-label"><span data-i18n="stat_med_cdi">Median CDI</span> <button class="stat-hint-btn" data-hint-key="stat_med_cdi_hint">ⓘ</button></span><span class="stat-value" id="s-med-cdi">—</span></div>
+        <div class="stat-row"><span class="stat-label"><span data-i18n="stat_avg_cdi">Pop-weighted CDI</span> <button class="stat-hint-btn" data-hint-key="stat_avg_cdi_hint">ⓘ</button></span><span class="stat-value" id="s-avg-cdi">—</span></div>
+        <div class="stat-row"><span class="stat-label" data-i18n="stat_pt_share">PT-favoured cells</span><span class="stat-value" id="s-pt-share">—</span></div>
+        <div class="stat-row"><span class="stat-label" data-i18n="stat_car_share">Car-dependent cells</span><span class="stat-value" id="s-car-share">—</span></div>
+      </div>
+
+      <div>
+        <p class="panel-title" data-i18n="selected_hex_title">Selected hexagon</p>
+        <div id="info-box"><p class="no-sel" data-i18n="no_selection">Click any hexagon or scatter point to inspect it.</p></div>
+      </div>
+
+      <div style="margin-top:auto">
+        <p class="panel-title" data-i18n="interactions_title">Interactions</p>
+        <p class="sidebar-hint" data-i18n-html="interactions_hint">Hover or click to cross-highlight.<br>Scroll &amp; drag to navigate.<br>Adjust the slider to filter cells.</p>
+      </div>
+    </aside>
+
+    <button id="city-side-toggle" class="edge-toggle" title="Toggle panel">‹</button>
+
+    <div id="map-panel">
+      <span class="panel-label">
+        <span data-i18n="label_cartogram">Map</span>
+        <span class="view-mode-badge" id="view-mode-label" data-i18n="view_mode_map">Geographic</span>
+        <button id="map-help-btn" class="help-btn" title="How to read the map">?</button>
+      </span>
+      <button id="view-toggle"
+              class="view-toggle-btn"
+              data-mode="map"
+              data-i18n-title="view_toggle_tip"
+              title="Switch between geographic map and population cartogram">
+        <span class="view-toggle-icon" aria-hidden="true">⬢</span>
+        <span class="when-map" data-i18n="view_toggle_to_cartogram">Cartogram</span>
+        <span class="when-cartogram" data-i18n="view_toggle_to_map">Geographic map</span>
+      </button>
+      <div id="city-map"></div>
+      <canvas id="map-canvas"></canvas>
+      <div class="map-alpha-control">
+        <span style="font-size:.85rem">⬕</span>
+        <input id="alpha-slider" type="range" min="0" max="100" value="80" class="alpha-slider" />
+      </div>
+    </div>
+
+    <div id="resize-handle" title="Drag to resize panels">
+      <div class="resize-grip"></div>
+    </div>
+
+    <div id="scatter-panel">
+      <span class="panel-label"><span data-i18n="label_scatter">Scatter · Car vs Public Transport access</span> <button id="help-btn" class="help-btn" title="How to read this">?</button></span>
+      <svg id="scatter-svg"></svg>
+    </div>
+  </div>
+
+  <!-- ── STATS VIEW ── -->
+  <div id="view-stats" style="display:none">
+    <div class="stats-container">
+      <div class="stats-header">
+        <h2 data-i18n="stats_title">City Comparison</h2>
+        <p class="stats-subtitle" data-i18n="stats_subtitle">Comparing car dependency across cities</p>
+        <div class="stats-controls">
+          <label data-i18n="stats_sort_by">Sort by:</label>
+          <select id="stats-sort">
+            <option value="avg_cdi" data-i18n="stats_sort_avg">Pop-weighted CDI</option>
+            <option value="med_cdi" data-i18n="stats_sort_med">Median CDI</option>
+            <option value="pt_share" data-i18n="stats_sort_pt">PT-favoured cells</option>
+            <option value="population" data-i18n="stats_sort_population">Population</option>
+          </select>
+        </div>
+      </div>
+      <div id="stats-loading" class="stats-loading" data-i18n="stats_loading">Loading city data…</div>
+      <div id="stats-empty" class="stats-loading" style="display:none" data-i18n="stats_empty">No city data is currently bundled. Run the data pipeline to populate this view.</div>
+      <div id="stats-content" style="display:none">
+        <div class="stats-chart-section">
+          <h3 data-i18n="stats_h_ranking">Cities ranked by CDI</h3>
+          <p class="stats-section-hint" data-i18n="stats_h_ranking_hint">Each bar shows the population-weighted CDI. Negative (blue) means transit-friendly; positive (red) means car-dependent.</p>
+          <div id="stats-bar-chart"></div>
+        </div>
+        <div class="stats-chart-section">
+          <h3 data-i18n="stats_h_scatter">Car access vs. PT access (city averages)</h3>
+          <p class="stats-section-hint" data-i18n="stats_h_scatter_hint">Each circle is a city, sized by population. Cities far below the diagonal are heavily car-dependent.</p>
+          <svg id="stats-city-scatter"></svg>
+        </div>
+        <div class="stats-chart-section">
+          <h3 data-i18n="stats_h_dist">CDI distribution across cells</h3>
+          <p class="stats-section-hint" data-i18n="stats_h_dist_hint">Cumulative share of the resident population living below each CDI value. Steeper curves mean more uniform car dependency.</p>
+          <svg id="stats-cdf"></svg>
+        </div>
+        <div class="stats-chart-section">
+          <h3 data-i18n="stats_h_table">Summary table</h3>
+          <div class="stats-table-wrap">
+            <table id="stats-table">
+              <thead><tr>
+                <th data-i18n="stats_th_city">City</th>
+                <th data-i18n="stats_th_hex">Hexagons</th>
+                <th data-i18n="stats_th_pop">Population</th>
+                <th data-i18n="stats_th_med">Median CDI</th>
+                <th data-i18n="stats_th_avg">Pop-w. CDI</th>
+                <th data-i18n="stats_th_pt">PT cells</th>
+                <th data-i18n="stats_th_car">Car cells</th>
+              </tr></thead>
+              <tbody id="stats-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>
