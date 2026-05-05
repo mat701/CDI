@@ -1187,7 +1187,7 @@ async function loadCityFeatures(slug) {
 // geographic hexes' `id` so we can preserve selection/hover across the toggle.
 async function loadCartogramFeatures(slug) {
   try {
-    const res = await fetch(dataPath(slug, `${slug}_cartogram.geojson`));
+    const res = await fetch(dataPath(slug, `cartogram.geojson`));
     if (!res.ok) return false;
     const gj = await res.json();
     const out = [];
