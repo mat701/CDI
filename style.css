@@ -563,7 +563,25 @@ header h1 span { color: var(--accent); }
 }
 .view-toggle-btn[data-mode="map"]       .when-cartogram { display: none; }
 .view-toggle-btn[data-mode="cartogram"]  .when-map      { display: none; }
-
+#map-loading {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; flex-direction: column; gap: 12px;
+  align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, .55);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+  font-size: .8rem; color: var(--muted); letter-spacing: .04em;
+}
+.map-loading-spinner {
+  width: 32px; height: 32px;
+  border: 3px solid rgba(0, 0, 0, .12);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: map-spin .8s linear infinite;
+}
+@keyframes map-spin {
+  to { transform: rotate(360deg); }
+}
 .view-mode-badge {
   font-size: .58rem; letter-spacing: .08em; text-transform: uppercase;
   background: var(--accent-soft); color: var(--accent);

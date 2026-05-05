@@ -1025,27 +1025,34 @@ function showLandingView() {
 async function showCityView(slug) {
   const city = CITIES_BY_SLUG.get(slug);
   currentCity = city;
-
   document.getElementById("view-landing").style.display = "none";
   document.getElementById("view-city").style.display = "";
   document.getElementById("view-city").classList.add("active");
   document.getElementById("view-stats").style.display = "none";
   document.getElementById("back-btn").style.display = "inline-block";
   document.getElementById("header-sub").textContent = city.name;
-
   if (window.innerWidth > 1024) {
     document.getElementById("view-city").style.gridTemplateColumns = `var(--sidebar-w) 1fr 8px 1fr`;
   }
+
+  // ── Reset state and tear down the previous city IMMEDIATELY (before any await).
   features = []; mapFeatures = []; cartogramFeatures = null; viewMode = "map";
   selectedId = null; hoveredId = null;
+
+  if (cityLeaflet) {
+    cityLeaflet.remove();
+    cityLeaflet = null;
+  }
+  if (canvas && ctx) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
   document.getElementById("view-city").classList.remove("side-closed");
   citySideToggle.textContent = "‹";
-  // Reset filter
   cdiMinSlider.value = -1; cdiMaxSlider.value = 1; updateRangeUI();
   updateInfoBox(null);
   updateCityStats();
   syncViewToggleUI();
-
   document.querySelectorAll(".mobile-tab").forEach((b) => b.classList.remove("active"));
   document.querySelector('.mobile-tab[data-panel="map"]')?.classList.add("active");
   if (window.innerWidth <= 1024) {
@@ -1054,38 +1061,81 @@ async function showCityView(slug) {
     document.getElementById("city-sidebar").style.display = "none";
   }
 
+  document.getElementById("info-box").innerHTML =
+    `<p style="color:var(--muted);font-size:.8rem">Loading ${city.name}…</p>`;
+
+  // ── Yield once so the cleared state paints, then build the empty Leaflet map
+  // centered on the city's known coordinates BEFORE the fetch starts.
+  await new Promise((r) => requestAnimationFrame(r));
+  initCityMap();
+  cityLeaflet.invalidateSize({ animate: false });
+  if (city.center && Number.isFinite(city.zoom)) {
+    cityLeaflet.setView(city.center, city.zoom, { animate: false });
+  }
+
+  // Show the loading overlay over the (now-centered, empty) map.
+  showMapLoading(true);
+
+  const loadStartedFor = slug;
   const loaded = await loadCityFeatures(slug);
+
+  // Bail out if the user clicked another city while this one was loading.
+  if (currentCity?.slug !== loadStartedFor) {
+    showMapLoading(false);
+    return;
+  }
+
   if (!loaded) {
+    showMapLoading(false);
     document.getElementById("info-box").innerHTML =
       `<p style="color:#b03a2e">Could not load data for ${city.name}.</p>`;
     return;
   }
+  // Data is here — hide the spinner now, even before rendering kicks in.
+  // For very large cities (Paris FUA), drawCanvas() can take seconds; we don't
+  // want the spinner to obscure the map while hexes are progressively painting.
+  showMapLoading(false);
 
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  initCityMap();
   if (window.innerWidth <= 1024) {
     document.getElementById("map-panel").style.display = "block";
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    cityLeaflet.invalidateSize({ animate: false });
   }
-  cityLeaflet.invalidateSize({ animate: false });
+
   mapFeatures = loaded;
   features = mapFeatures;
 
   // Prefetch the cartogram in the background so the toggle is instant.
-  // Don't await — the geographic view should render immediately.
   loadCartogramFeatures(slug).then((cg) => {
-    if (currentCity?.slug !== slug) return; // user moved on
-    cartogramFeatures = cg; // array on success, false if missing/failed
+    if (currentCity?.slug !== slug) return;
+    cartogramFeatures = cg;
     syncViewToggleUI();
   });
 
+  // Now that data is here, refit precisely to the hex bounds.
   const lngs = features.flatMap((f) => f.geometry.coordinates.flatMap((r) => r.map((p) => p[0])));
   const lats = features.flatMap((f) => f.geometry.coordinates.flatMap((r) => r.map((p) => p[1])));
   cityLeaflet.fitBounds([[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]],
     { padding: [10, 10], animate: false });
-
   resizeCanvas(); drawCanvas(); buildScatter(); updateCityStats();
   syncViewToggleUI();
+  updateInfoBox(null);
+
+}
+
+function showMapLoading(on) {
+  let el = document.getElementById("map-loading");
+  if (on) {
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "map-loading";
+      el.innerHTML = `<div class="map-loading-spinner"></div><span>${t("loading") || "Loading…"}</span>`;
+      document.getElementById("map-panel").appendChild(el);
+    }
+    el.style.display = "flex";
+  } else if (el) {
+    el.style.display = "none";
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

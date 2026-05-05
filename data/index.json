@@ -100,7 +100,7 @@
   },
   {
     "slug": "new_york",
-    "name": "New_york",
+    "name": "New York",
     "center": [
       40.663261,
       -73.938666
@@ -109,7 +109,7 @@
   },
   {
     "slug": "paris (FUA)",
-    "name": "Paris (fua)",
+    "name": "Paris (FUA)",
     "center": [
       48.842644,
       2.314062
@@ -135,8 +135,8 @@
     "zoom": 10
   },
   {
-    "slug": "rome",
-    "name": "Rome",
+    "slug": "rome (metro D scenario)",
+    "name": "Rome (Metro D scenario)",
     "center": [
       41.885773,
       12.460808
@@ -144,8 +144,8 @@
     "zoom": 10
   },
   {
-    "slug": "rome (metro D scenario)",
-    "name": "Rome (metro d scenario)",
+    "slug": "rome",
+    "name": "Rome",
     "center": [
       41.885773,
       12.460808
