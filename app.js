@@ -1040,6 +1040,14 @@ async function router() {
   } else {
     showLandingView();
   }
+  // Track route as a GA pageview
+  if (typeof gtag === "function") {
+    gtag("event", "page_view", {
+      page_location: window.location.href,
+      page_path: window.location.hash || "#/",
+      page_title: document.getElementById("header-sub")?.textContent || "Car Dependency Index",
+    });
+  }
 }
 
 function showLandingView() {
