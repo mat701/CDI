@@ -347,7 +347,8 @@ async function loadManifest() {
 // Probe whether a city has bundled data files. Cached.
 const cityDataAvailability = new Map();
 async function cityHasData(slug) {
-  if (cityDataAvailability.has(slug)) return cityDataAvailability.get(slug);
+  return true
+  /*if (cityDataAvailability.has(slug)) return cityDataAvailability.get(slug);
   try {
     // HEAD on the geojson is enough; the CSV is a sibling
     const res = await fetch(dataPath(slug, "hexes.geojson"), { method: "HEAD" });
@@ -357,7 +358,7 @@ async function cityHasData(slug) {
   } catch (e) {
     cityDataAvailability.set(slug, false);
     return false;
-  }
+  }*/
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
