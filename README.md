@@ -15,11 +15,7 @@ so it ranges from **−1** (PT-favoured) through **0** (balanced) to **+1**
 
 The viewer accompanies the paper *Car Dependency in Urban Accessibility* by
 Campanelli, Marzolla, Bruno, Melo & Loreto (2026 ·
-[arXiv:2604.01019](https://arxiv.org/abs/2604.01019)) and is styled to match
-the companion
-[accessibility-pov](https://github.com/mat701/accessibility-pov) viewer for
-the upstream proximity/opportunity framework
-([Bruno et al., EPJ Data Science 2026](https://doi.org/10.1140/epjds/s13688-026-00623-8)).
+[arXiv:2604.01019](https://arxiv.org/abs/2604.01019)) by the Sustainable Cities team at Sony CSL - Rome. See all platforms here: https://linktr.ee/sonycsl_cities_platforms.
 
 ## Features
 
@@ -27,13 +23,12 @@ the upstream proximity/opportunity framework
   with bundled hex-level data are highlighted in red; others are dimmed and
   carry a *no data* badge.
 - **City view** — three-panel layout:
-  - Cartogram (Leaflet base + Canvas hexagon overlay) with a continuous
+  - Cartogram with a continuous
     blue ↔ white ↔ red CDI gradient.
   - Sidebar with: scale legend, dual-thumb CDI range filter, live city
     summary, selected-hexagon inspector and interaction tips.
   - Scatter plot of opportunity-by-car (x) vs. opportunity-by-PT (y), with
     the y = x diagonal marking CDI = 0. Cross-highlights with the map.
-  - Drag-to-resize handle between map and scatter; sidebar can be collapsed.
 - **Compare cities (Stats view)** — diverging bar chart of population-weighted
   CDI, city-level scatter, population-weighted CDI distribution and a sortable
   summary table.
@@ -61,9 +56,3 @@ bundled data.
 Campanelli B., Marzolla F., Bruno M., Melo H. P. M., Loreto V. (2026).
 *Car Dependency in Urban Accessibility.*
 [arXiv:2604.01019](https://arxiv.org/abs/2604.01019)
-
-The companion accessibility framework on which this work builds is described
-in: Bruno M., Campanelli B., Melo H. P. M., Rossi Mori L., Loreto V. (2026).
-*The dimensions of accessibility: proximity, opportunities, values.*
-EPJ Data Science 15:22.
-[doi:10.1140/epjds/s13688-026-00623-8](https://doi.org/10.1140/epjds/s13688-026-00623-8)
